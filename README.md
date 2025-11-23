@@ -115,6 +115,14 @@ To update all dependencies to their latest compatible versions:
 poetry update
 ```
 
+### Setting Up Environment Variables
+
+Create a `.env` file in the root directory and add your environment variables.
+
+```bash
+GOOGLE_API_KEY=your_google_api_key
+```
+
 ### Running the Application
 
 ```bash
