@@ -1,6 +1,12 @@
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 import gradio as gr
 from introduction import introduction
-from mcps.letter_counter import letter_counter
+from mcps.video_summarizer import video_summarizer
 
 
 with gr.Blocks() as demo:
@@ -11,14 +17,23 @@ with gr.Blocks() as demo:
         introduction()
 
     with gr.Tab("MCP Tools"):
-        with gr.Tab("Demo Letter Counter"):
+        with gr.Tab("Video Summarizer"):
             gr.Interface(
-                fn=letter_counter,
-                inputs=[gr.Textbox("strawberry"), gr.Textbox("r")],
-                outputs=[gr.Number()],
-                title="Letter Counter",
-                description="Enter text and a letter to count how many times the letter appears in the text.",
-                api_name="predict",
+                fn=video_summarizer,
+                inputs=[
+                    gr.Video(label="Upload Video"),
+                    gr.Slider(
+                        value=2.0,
+                        label="FPS (frames per second for video processing)",
+                        minimum=0.1,
+                        maximum=24.0,
+                        step=0.1,
+                    ),
+                ],
+                outputs=[gr.Textbox(label="Video Summary (JSON)", lines=20)],
+                title="Video Summarizer",
+                description="Upload a video to get an AI-generated summary of its content, including key scenes, detected objects, and mood tags. Uses Google Gemini's native video understanding.",
+                api_name="video_summarizer",
             )
 
 
