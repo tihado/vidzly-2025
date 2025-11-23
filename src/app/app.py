@@ -171,7 +171,7 @@ with gr.Blocks() as demo:
                         info="Maximum 30 seconds for ElevenLabs",
                     ),
                     gr.Number(
-                        value=None,
+                        value=60,
                         label="BPM (Optional)",
                         minimum=60,
                         maximum=200,
