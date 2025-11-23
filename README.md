@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./app.png" alt="Vidzly Logo"/>
+</p>
+
 # 🎬 Vidzly - Your AI-Powered Short Video Creator
 
 > **Transform raw footage into viral-ready content in seconds. No skills required. No expensive gear needed. Just your vision and our AI.**
