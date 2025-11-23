@@ -1,4 +1,5 @@
 import gradio as gr
+from introduction import introduction
 from mcps.letter_counter import letter_counter
 
 
@@ -7,11 +8,7 @@ with gr.Blocks() as demo:
         # Tell about this project
         # Agent full workflow here
 
-        gr.Markdown(
-            """
-        # Vidzly
-        """
-        )
+        introduction()
 
     with gr.Tab("MCP Tools"):
         with gr.Tab("Demo Letter Counter"):
