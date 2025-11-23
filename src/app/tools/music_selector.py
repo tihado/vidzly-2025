@@ -19,7 +19,6 @@ def music_selector(
     style: Optional[str] = None,
     target_duration: float = 30.0,
     bpm: Optional[int] = None,
-    sync_points: Optional[List[float]] = None,
     looping: bool = True,
     prompt_influence: float = 0.3,
     output_path: Optional[str] = None,
@@ -95,10 +94,6 @@ def music_selector(
         # Add rhythm information if provided
         if bpm is not None and bpm > 0:
             prompt_parts.append(f"{int(bpm)} BPM rhythm")
-
-        # Add sync/beat information
-        if sync_points:
-            prompt_parts.append("with clear beat markers")
 
         # Combine into final prompt
         prompt = ", ".join(prompt_parts)
