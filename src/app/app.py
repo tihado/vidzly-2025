@@ -6,7 +6,7 @@ load_dotenv()
 
 import gradio as gr
 from introduction import introduction
-from mcps.video_summarizer import video_summarizer
+from tools.video_summarizer import video_summarizer
 
 
 with gr.Blocks() as demo:

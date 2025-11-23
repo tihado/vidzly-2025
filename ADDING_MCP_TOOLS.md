@@ -10,7 +10,7 @@ MCP tools in this project are Python functions that can be exposed through Gradi
 
 ### Step 1: Create the Tool Function
 
-Create a new Python file in the `src/app/mcps/` directory. Name it descriptively (e.g., `word_reverser.py`, `text_analyzer.py`).
+Create a new Python file in the `src/app/tools/` directory. Name it descriptively (e.g., `word_reverser.py`, `text_analyzer.py`).
 
 **Example: Creating `word_reverser.py`**
 
@@ -43,7 +43,7 @@ def word_reverser(text):
 Open `src/app/app.py` and add an import statement at the top:
 
 ```python
-from mcps.word_reverser import word_reverser
+from tools.word_reverser import word_reverser
 ```
 
 ### Step 3: Create a Gradio Interface
@@ -88,7 +88,7 @@ with gr.Tab("Demo Word Reverser"):
 
 Here's a complete example showing how the existing `letter_counter` tool is implemented:
 
-**File: `src/app/mcps/letter_counter.py`**
+**File: `src/app/tools/letter_counter.py`**
 
 ```python
 def letter_counter(word, letter):
@@ -111,7 +111,7 @@ def letter_counter(word, letter):
 **Integration in `app.py`:**
 
 ```python
-from mcps.letter_counter import letter_counter
+from tools.letter_counter import letter_counter
 
 # ... inside the MCP Tools tab ...
 with gr.Tab("Demo Letter Counter"):
@@ -198,8 +198,7 @@ gr.Interface(
 
 ## Troubleshooting
 
-- **Import errors:** Make sure your function is in the `src/app/mcps/` directory and the import path matches
+- **Import errors:** Make sure your function is in the `src/app/tools/` directory and the import path matches
 - **MCP not exposing tool:** Verify `api_name` is unique and the function is properly defined
 - **Type errors:** Ensure your function's return type matches the Gradio output component type
 - **UI not showing:** Check that the tab is properly nested within `with gr.Tab("MCP Tools"):`
-

@@ -16,6 +16,7 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 ### Phase 1: Video Analysis Tools
 
 #### 1.1 Video Summarizer (`video_summarizer.py`)
+
 - **Purpose**: Analyze video content and generate text summaries
 - **Input**: Video file path
 - **Output**: JSON with video summary, key scenes, detected objects/activities, mood tags
@@ -23,6 +24,7 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 - **Returns**: Structured summary including duration, scene descriptions, visual elements
 
 #### 1.2 Video Metadata Extractor (`video_metadata.py`)
+
 - **Purpose**: Extract technical metadata from videos
 - **Input**: Video file path
 - **Output**: Duration, resolution, fps, codec, file size
@@ -32,6 +34,7 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 ### Phase 2: Content Understanding Tools
 
 #### 2.1 Description Parser (`description_parser.py`)
+
 - **Purpose**: Parse and understand user descriptions to extract requirements
 - **Input**: User description text
 - **Output**: Structured requirements (mood, style, key elements, target length)
@@ -39,6 +42,7 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 - **Returns**: JSON with extracted mood, style preferences, key topics, pacing
 
 #### 2.2 Scene Matcher (`scene_matcher.py`)
+
 - **Purpose**: Match video scenes to user requirements
 - **Input**: Video summaries + parsed requirements
 - **Output**: List of matching scenes with timestamps and relevance scores
@@ -48,6 +52,7 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 ### Phase 3: Script Generation & Planning
 
 #### 3.1 Video Script Generator (`video_script_generator.py`)
+
 - **Purpose**: Create a detailed script/storyboard for the final 30-second video
 - **Input**: Video summaries, matched scenes, parsed user requirements
 - **Output**: Detailed script with scene sequence, timings, transitions, and structure
@@ -64,6 +69,7 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 ### Phase 4: Video Processing Tools
 
 #### 4.1 Video Clipper (`video_clipper.py`)
+
 - **Purpose**: Extract specific segments from videos based on script
 - **Input**: Video path, start time, end time
 - **Output**: Clipped video file path
@@ -71,6 +77,7 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 - **Returns**: Path to clipped video segment
 
 #### 4.2 Scene Selector (`scene_selector.py`)
+
 - **Purpose**: Intelligently select best scenes to fit 30-second target (if script needs refinement)
 - **Input**: List of matched scenes, target duration (30s), script requirements
 - **Output**: Optimized scene selection with timestamps
@@ -80,6 +87,7 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 ### Phase 5: Audio & Composition Tools
 
 #### 5.1 Music Selector (`music_selector.py`)
+
 - **Purpose**: Select appropriate background music based on mood/style from script
 - **Input**: Mood/style tags, target duration, script rhythm requirements
 - **Output**: Music file path or URL
@@ -87,6 +95,7 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 - **Returns**: Music file path with BPM and mood information
 
 #### 5.2 Video Composer (`video_composer.py`)
+
 - **Purpose**: Combine video clips, add music, apply transitions according to script
 - **Input**: List of video clip paths, music path, script with transitions
 - **Output**: Final composed video file path
@@ -96,6 +105,7 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 ### Phase 6: Workflow Orchestration
 
 #### 6.1 Video Workflow Orchestrator (`video_workflow.py`)
+
 - **Purpose**: Main workflow that coordinates all tools
 - **Input**: List of video files, user description
 - **Output**: Final video file path, processing summary, generated script
@@ -105,38 +115,45 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 ## Implementation Phases
 
 ### Phase 1: Foundation (Dependencies & Basic Tools)
+
 1. Add video processing dependencies (opencv-python, moviepy, ffmpeg-python, numpy, pillow)
 2. Implement Video Metadata Extractor
 3. Implement Video Summarizer
 4. Set up temporary file storage system
 
 ### Phase 2: Understanding Layer
+
 1. Implement Description Parser
 2. Implement Scene Matcher
 3. Test analysis and matching pipeline
 
 ### Phase 3: Script Generation
+
 1. Implement Video Script Generator
 2. Test script generation with various inputs
 3. Validate script timing (must sum to ~30 seconds)
 
 ### Phase 4: Processing Layer
+
 1. Implement Video Clipper
 2. Implement Scene Selector
 3. Test video clipping and selection based on scripts
 
 ### Phase 5: Composition Layer
+
 1. Implement Music Selector (start with simple mood-based selection)
 2. Implement Video Composer
 3. Test full composition pipeline with script
 
 ### Phase 6: Integration & UI
+
 1. Implement Video Workflow Orchestrator
 2. Create main Vidzly UI in app.py (upload, description, progress, script preview, output)
 3. Integrate all MCP tools into Gradio interface
 4. Add error handling and user feedback
 
 ### Phase 7: Polish & Optimization
+
 1. Add progress tracking
 2. Optimize processing speed
 3. Add preview functionality
@@ -149,7 +166,7 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 src/app/
 ├── app.py                    # Main Gradio app with Vidzly workflow UI
 ├── introduction.py           # Existing intro component
-├── mcps/
+├── tools/
 │   ├── __init__.py
 │   ├── video_metadata.py     # Extract video technical info
 │   ├── video_summarizer.py   # Analyze and summarize video content
@@ -172,12 +189,14 @@ src/app/
 ### Storage Locations
 
 1. **Uploaded Videos (Gradio Temporary Directory)**
+
    - Gradio automatically stores uploaded files in system temp directory
    - Can be customized with `GRADIO_TEMP_DIR` environment variable
    - Files accessible via file paths returned by `gr.File` component
    - These are temporary and may be cleaned up by Gradio
 
 2. **Processing Working Directory**
+
    - Create: `src/app/temp/` or use system temp with unique session IDs
    - Store: Clipped video segments, intermediate processing files
    - Structure: `temp/{session_id}/clips/`, `temp/{session_id}/final/`
@@ -192,6 +211,7 @@ src/app/
 ### File Manager Implementation
 
 The `file_manager.py` utility should:
+
 - Create session-based temporary directories
 - Generate unique file names to avoid conflicts
 - Provide cleanup functions (session cleanup, old file cleanup)
@@ -203,7 +223,6 @@ The `file_manager.py` utility should:
 - **Input**: Use `gr.File(file_count="multiple")` for video uploads
   - Returns list of file paths (temporary Gradio paths)
   - Copy to working directory immediately for processing
-  
 - **Output**: Use `gr.Video()` component
   - Accepts file path (absolute or relative to working directory)
   - Gradio serves the file and provides download capability
@@ -214,7 +233,7 @@ The `file_manager.py` utility should:
 1. **Immediate Copy**: Copy uploaded files from Gradio temp to working directory
 2. **Absolute Paths**: Use absolute paths for all file operations
 3. **Session Management**: Use unique session IDs to isolate user workflows
-4. **Cleanup Strategy**: 
+4. **Cleanup Strategy**:
    - Clean up intermediate files after final video is created
    - Keep final videos for a retention period (e.g., 1 hour)
    - Implement background cleanup task for old files
@@ -223,6 +242,7 @@ The `file_manager.py` utility should:
 ## Technical Stack
 
 ### Dependencies to Add
+
 - `opencv-python` - Video frame extraction and basic processing
 - `moviepy` - Video editing, clipping, composition
 - `ffmpeg-python` - Alternative/additional video processing
@@ -230,12 +250,14 @@ The `file_manager.py` utility should:
 - `pillow` - Image processing for frame analysis
 
 ### Existing Dependencies
+
 - `gradio` (with MCP) - UI and MCP server
 - `google-genai` - AI analysis and understanding
 
 ## Main Workflow UI Design
 
 The "Vidzly" tab in app.py will include:
+
 1. **Video Upload Section**: Multiple file upload component
 2. **Description Input**: Text area for user description
 3. **Process Button**: Trigger workflow
@@ -326,28 +348,34 @@ The "Vidzly" tab in app.py will include:
 ## Implementation Todos
 
 1. **Phase 1: Foundation**
+
    - Add video processing dependencies to pyproject.toml
    - Implement video_metadata.py
    - Implement video_summarizer.py
    - Create utils/file_manager.py
 
 2. **Phase 2: Understanding**
+
    - Implement description_parser.py
    - Implement scene_matcher.py
 
 3. **Phase 3: Script Generation**
+
    - Implement video_script_generator.py
    - Add script validation logic
 
 4. **Phase 4: Processing**
+
    - Implement video_clipper.py
    - Implement scene_selector.py
 
 5. **Phase 5: Composition**
+
    - Implement music_selector.py
    - Implement video_composer.py
 
 6. **Phase 6: Integration**
+
    - Implement video_workflow.py
    - Create main Vidzly UI in app.py
    - Integrate all MCP tools
@@ -358,4 +386,3 @@ The "Vidzly" tab in app.py will include:
    - Optimize performance
    - Add preview functionality
    - Improve UX
-
