@@ -1,22 +1,27 @@
 import cv2
 import os
-import tempfile
+import re
 from pathlib import Path
 from typing import Optional
+import mimetypes
 import google.genai as genai
 
 
 def frame_extractor(
     video_input,
-    num_candidates: int = 5,
+    num_candidates: int = 5,  # Kept for backward compatibility, but not used
     output_path: Optional[str] = None,
 ) -> str:
     """
     Extract a representative frame from video using AI (Gemini Vision API).
+    
+    This function passes the entire video to Gemini AI, which analyzes it and returns
+    the best timestamp for frame extraction. This is much faster than analyzing
+    individual frames separately.
 
     Args:
         video_input: Video file path (str) or tuple (video_path, subtitle_path) from Gradio
-        num_candidates: Number of candidate frames to analyze (default: 5)
+        num_candidates: Deprecated - kept for backward compatibility but not used
         output_path: Optional output path for frame image
 
     Returns:
@@ -42,6 +47,7 @@ def frame_extractor(
                 "GOOGLE_API_KEY environment variable is required for AI frame extraction"
             )
 
+        # Get video metadata
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
             raise ValueError(f"Could not open video file: {video_path}")
@@ -54,91 +60,73 @@ def frame_extractor(
             cap.release()
             raise ValueError("Video has zero duration")
 
-        # Sample frames evenly across video
-        candidate_frames = []
-        candidate_timestamps = []
-
-        for i in range(num_candidates):
-            timestamp = (duration / (num_candidates + 1)) * (i + 1)
-            frame_number = int(timestamp * fps)
-            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
-            ret, frame = cap.read()
-
-            if ret:
-                candidate_frames.append(frame)
-                candidate_timestamps.append(timestamp)
-
         cap.release()
 
-        if not candidate_frames:
-            raise ValueError("Could not extract any frames from video")
-
-        # Use Gemini Vision API to select best frame
+        # Use Gemini Vision API to analyze video and get best timestamp
         client = genai.Client(api_key=api_key)
 
-        # Encode frames as images
-        frame_paths = []
-        try:
-            for i, frame in enumerate(candidate_frames):
-                temp_file = tempfile.NamedTemporaryFile(
-                    suffix=".png", delete=False, mode="wb"
-                )
-                cv2.imwrite(temp_file.name, frame)
-                frame_paths.append(temp_file.name)
-                temp_file.close()
+        # Read video file as bytes
+        with open(video_path, "rb") as f:
+            video_data = f.read()
 
-            # Analyze frames with Gemini
-            prompt = """Analyze these video frames and select the most engaging, representative frame. 
-            Consider: visual appeal, subject clarity, composition, color, and overall engagement.
-            Respond with just the frame number (1-{}) that is the best choice.""".format(
-                len(candidate_frames)
-            )
+        # Determine MIME type
+        mime_type, _ = mimetypes.guess_type(video_path)
+        if not mime_type or not mime_type.startswith("video/"):
+            # Default to mp4 if cannot determine
+            mime_type = "video/mp4"
 
-            # For simplicity, analyze each frame individually and score them
-            # In a production system, you might send all frames in one request
-            scores = []
-            for frame_path in frame_paths:
-                with open(frame_path, "rb") as f:
-                    image_data = f.read()
+        # Create prompt asking for best timestamp
+        prompt = f"""Analyze this video and identify the best timestamp (in seconds) to extract a representative, engaging frame for a thumbnail.
 
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash-lite",
-                    contents=[
-                        prompt,
-                        genai.types.Part(
-                            inline_data=genai.types.Blob(
-                                data=image_data, mime_type="image/png"
-                            )
-                        ),
-                    ],
-                )
+Consider these factors:
+- Visual appeal and composition quality
+- Subject clarity and focus
+- Color and lighting quality
+- Overall engagement and representativeness of the video content
+- Avoid frames with motion blur or poor quality
 
-                # Simple scoring: count positive keywords in response
-                response_text = response.text.lower()
-                positive_keywords = [
-                    "engaging",
-                    "clear",
-                    "good",
-                    "best",
-                    "representative",
-                    "appealing",
-                ]
-                score = sum(1 for keyword in positive_keywords if keyword in response_text)
-                scores.append(score)
+The video duration is approximately {duration:.2f} seconds.
 
-            # Select frame with highest score
-            best_idx = scores.index(max(scores))
+Respond with ONLY the timestamp in seconds as a number (e.g., "12.5" or "8.3"). Do not include any other text or explanation."""
 
-        finally:
-            # Cleanup temp files
-            for path in frame_paths:
-                try:
-                    os.unlink(path)
-                except:
-                    pass
+        # Create VideoMetadata with fps parameter for efficient processing
+        # Using 2.0 fps for good balance between speed and accuracy
+        video_metadata = genai.types.VideoMetadata(fps=2.0)
+        video_blob = genai.types.Blob(data=video_data, mime_type=mime_type)
+        video_part = genai.types.Part(
+            inline_data=video_blob,
+            videoMetadata=video_metadata,
+        )
 
-        best_frame = candidate_frames[best_idx]
-        best_timestamp = candidate_timestamps[best_idx]
+        # Use Gemini's native video understanding to analyze the entire video
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-lite",
+            contents=[prompt, video_part],
+        )
+
+        # Extract timestamp from response
+        response_text = response.text.strip()
+        
+        # Try to extract numeric timestamp from response
+        # Look for patterns like "12.5", "8.3", "15", etc.
+        timestamp_match = re.search(r'(\d+\.?\d*)', response_text)
+        if timestamp_match:
+            best_timestamp = float(timestamp_match.group(1))
+            # Ensure timestamp is within video duration
+            best_timestamp = max(0.0, min(best_timestamp, duration - 0.1))
+        else:
+            # Fallback: use middle of video if we can't parse the response
+            best_timestamp = duration / 2
+
+        # Extract frame at the selected timestamp
+        cap = cv2.VideoCapture(video_path)
+        frame_number = int(best_timestamp * fps)
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+        ret, best_frame = cap.read()
+        cap.release()
+
+        if not ret:
+            raise ValueError(f"Could not extract frame at timestamp {best_timestamp}s")
 
         # Generate output path if not provided
         if output_path is None:
