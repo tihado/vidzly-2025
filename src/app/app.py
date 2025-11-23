@@ -10,14 +10,18 @@ from tools.video_summarizer import video_summarizer
 from tools.video_clipper import video_clipper
 from tools.video_composer import video_composer
 from tools.music_selector import music_selector
+from workflow_ui import create_workflow_ui
+from workflow_agent import agent_workflow
 
 
 with gr.Blocks() as demo:
     with gr.Tab("Vidzly"):
-        # Tell about this project
-        # Agent full workflow here
-
+        # Introduction section
         introduction()
+
+        # Full workflow UI
+        gr.Markdown("---")
+        create_workflow_ui()
 
     with gr.Tab("MCP Tools"):
         with gr.Tab("Video Summarizer"):
@@ -138,6 +142,42 @@ with gr.Blocks() as demo:
                 title="Music Selector",
                 description="Generate background sound effects using ElevenLabs API based on mood, style, and duration. The generated audio can be used as background music or sound effects for videos. Requires ELEVENLABS_API_KEY in your .env file.",
                 api_name="music_selector",
+            )
+
+        with gr.Tab("AI Agent Workflow"):
+            gr.Interface(
+                fn=agent_workflow,
+                inputs=[
+                    gr.File(
+                        label="Upload Video(s)",
+                        file_count="multiple",
+                        file_types=["video"],
+                    ),
+                    gr.Textbox(
+                        label="User Description (Optional)",
+                        placeholder="e.g., energetic and fast-paced, calm and cinematic...",
+                        lines=3,
+                    ),
+                    gr.Slider(
+                        value=30.0,
+                        label="Target Duration (seconds)",
+                        minimum=5.0,
+                        maximum=60.0,
+                        step=1.0,
+                    ),
+                    gr.Checkbox(
+                        value=True,
+                        label="Generate Background Music",
+                    ),
+                ],
+                outputs=[
+                    gr.Video(label="Final Video"),
+                    gr.Textbox(label="Summary (JSON)", lines=10),
+                    gr.Textbox(label="Script (JSON)", lines=10),
+                ],
+                title="AI Agent Workflow",
+                description="Intelligent agent that orchestrates the full video creation workflow using MCP tools. The agent analyzes videos, generates scripts, creates music, and composes the final video automatically.",
+                api_name="agent_workflow",
             )
 
 
