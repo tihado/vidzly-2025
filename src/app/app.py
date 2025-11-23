@@ -9,7 +9,7 @@ from introduction import introduction
 from tools.video_summarizer import video_summarizer
 from tools.video_clipper import video_clipper
 from tools.frame_extractor import frame_extractor
-from tools.thumbnail_generation import thumbnail_generation
+from tools.thumbnail_generator import thumbnail_generator
 from tools.video_composer import video_composer
 from tools.music_selector import music_selector
 
@@ -98,7 +98,7 @@ with gr.Blocks() as demo:
 
         with gr.Tab("Thumbnail Generation"):
             gr.Interface(
-                fn=thumbnail_generation,
+                fn=thumbnail_generator,
                 inputs=[
                     gr.Image(
                         label="Frame Image",

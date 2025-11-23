@@ -80,3 +80,24 @@ def real_video_file_2():
     
     return video_path
 
+
+@pytest.fixture
+def temp_image_file():
+    """Create a temporary image file for testing."""
+    from PIL import Image
+    
+    temp_dir = tempfile.mkdtemp()
+    image_path = os.path.join(temp_dir, "test_image.png")
+    
+    # Create a minimal test image
+    img = Image.new('RGB', (100, 100), color='red')
+    img.save(image_path)
+    
+    yield image_path
+    
+    # Cleanup
+    if os.path.exists(image_path):
+        os.remove(image_path)
+    if os.path.exists(temp_dir):
+        os.rmdir(temp_dir)
+
