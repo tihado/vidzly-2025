@@ -121,6 +121,7 @@ Create a `.env` file in the root directory and add your environment variables.
 
 ```bash
 GOOGLE_API_KEY=your_google_api_key
+ELEVENLABS_API_KEY=your_elevenlabs_api_key
 ```
 
 ### Running the Application

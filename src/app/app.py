@@ -9,6 +9,7 @@ from introduction import introduction
 from tools.video_summarizer import video_summarizer
 from tools.video_clipper import video_clipper
 from tools.video_composer import video_composer
+from tools.music_selector import music_selector
 
 
 with gr.Blocks() as demo:
@@ -86,6 +87,57 @@ with gr.Blocks() as demo:
                 title="Video Composer",
                 description="Combine video clips, add music, and apply transitions according to a script. Upload source videos, then provide a JSON script where each scene's 'source_video' references a video by index (0-based) or filename. The same video can be used in multiple scenes with different time ranges.",
                 api_name="video_composer",
+            )
+
+        with gr.Tab("Music Selector"):
+            gr.Interface(
+                fn=music_selector,
+                inputs=[
+                    gr.Textbox(
+                        label="Mood",
+                        placeholder="energetic, calm, dramatic, fun",
+                        value="energetic",
+                        info="Enter mood tags (comma-separated) or a single mood",
+                    ),
+                    gr.Textbox(
+                        label="Style (Optional)",
+                        placeholder="cinematic, modern, retro",
+                        value="",
+                    ),
+                    gr.Number(
+                        value=5.0,
+                        label="Target Duration (seconds)",
+                        minimum=1.0,
+                        maximum=30.0,
+                        step=0.5,
+                        info="Maximum 30 seconds for ElevenLabs",
+                    ),
+                    gr.Number(
+                        value=None,
+                        label="BPM (Optional)",
+                        minimum=60,
+                        maximum=200,
+                        step=1,
+                        info="Beats per minute for rhythm matching (optional)",
+                    ),
+                    gr.Checkbox(
+                        value=True,
+                        label="Looping",
+                        info="Enable seamless looping for continuous playback",
+                    ),
+                    gr.Slider(
+                        value=0.3,
+                        label="Prompt Influence",
+                        minimum=0,
+                        maximum=1,
+                        step=0.01,
+                        info="How closely the output matches the prompt (0-1)",
+                    ),
+                ],
+                outputs=[gr.Audio(label="Generated Sound Effect (MP3)")],
+                title="Music Selector",
+                description="Generate background sound effects using ElevenLabs API based on mood, style, and duration. The generated audio can be used as background music or sound effects for videos. Requires ELEVENLABS_API_KEY in your .env file.",
+                api_name="music_selector",
             )
 
 

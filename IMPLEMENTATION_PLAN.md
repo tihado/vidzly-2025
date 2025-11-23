@@ -88,11 +88,21 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 
 #### 5.1 Music Selector (`music_selector.py`)
 
-- **Purpose**: Select appropriate background music based on mood/style from script
-- **Input**: Mood/style tags, target duration, script rhythm requirements
-- **Output**: Music file path or URL
-- **Technology**: Music library/database or API (e.g., Free Music Archive, YouTube Audio Library)
-- **Returns**: Music file path with BPM and mood information
+- **Purpose**: Generate appropriate background sound effects based on mood/style from script
+- **Input**:
+  - Mood/style tags (comma-separated string or list)
+  - Target duration (0.5-30 seconds)
+  - Optional: style description, BPM, sync points
+  - Optional: looping (boolean), prompt_influence (0-1 float)
+- **Output**: Generated audio file path (MP3 format)
+- **Technology**: ElevenLabs API for sound effect generation
+- **Returns**: Path to generated MP3 audio file
+- **API Parameters**:
+  - `text`: Prompt describing the desired sound effect
+  - `duration_seconds`: Duration in seconds (0.5-30)
+  - `loop`: Boolean for seamless looping
+  - `prompt_influence`: Float (0-1) controlling how closely output matches prompt
+  - `output_format`: Audio format (default: "mp3_44100_128")
 
 #### 5.2 Video Composer (`video_composer.py`)
 
