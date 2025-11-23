@@ -86,15 +86,15 @@ with gr.Blocks() as demo:
                         type="filepath",
                     ),
                     gr.Textbox(
-                        label="Video Script JSON",
-                        placeholder='{"scenes": [...], "music": {"mood": "energetic"}, "pacing": "fast", "narrative_structure": "..."}',
+                        label="Video Summary",
+                        placeholder="Enter the video summary text here...",
                         lines=10,
-                        info="Paste the JSON script from Video Script Generator. Should include scenes, mood, pacing, and narrative structure.",
+                        info="Enter the video summary text (extract the 'summary' field from Video Summarizer JSON output).",
                     ),
                 ],
                 outputs=[gr.Image(label="Generated Thumbnail", type="filepath")],
                 title="Thumbnail Generation",
-                description="Automatically generate engaging thumbnails with AI-generated text and stickers. Uses Gemini AI to analyze the frame and video script to create context-aware thumbnail designs with optimal text placement and sticker recommendations.",
+                description="Automatically generate engaging thumbnails with AI-generated text and stickers. Uses Gemini AI to analyze the frame and video summary to create context-aware thumbnail designs with optimal text placement and sticker recommendations.",
                 api_name="thumbnail_generation",
             )
 
