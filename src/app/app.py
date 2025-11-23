@@ -9,6 +9,7 @@ from introduction import introduction
 from tools.video_summarizer import video_summarizer
 from tools.video_clipper import video_clipper
 from tools.frame_extractor import frame_extractor
+from tools.thumbnail_generation import thumbnail_generation
 from tools.video_composer import video_composer
 from tools.music_selector import music_selector
 
@@ -69,23 +70,32 @@ with gr.Blocks() as demo:
                 fn=frame_extractor,
                 inputs=[
                     gr.Video(label="Upload Video"),
-                    gr.Dropdown(
-                        choices=["middle", "best", "ai", "custom"],
-                        value="middle",
-                        label="Extraction Strategy",
-                        info="middle: Extract frame at middle of video | best: Select best quality frame | ai: Use AI to select most engaging frame | custom: Extract at specific timestamp",
-                    ),
-                    gr.Number(
-                        value=None,
-                        label="Custom Timestamp (seconds)",
-                        info="Required only if strategy is 'custom'. Leave empty otherwise.",
-                        precision=2,
-                    ),
                 ],
                 outputs=[gr.Image(label="Extracted Frame", type="filepath")],
                 title="Frame Extractor",
-                description="Extract a representative frame from a video. Supports multiple extraction strategies including middle frame, best quality frame, AI-selected frame, or custom timestamp.",
+                description="Extract a representative frame from a video using AI (Gemini Vision API) to select the most engaging frame.",
                 api_name="frame_extractor",
+            )
+
+        with gr.Tab("Thumbnail Generation"):
+            gr.Interface(
+                fn=thumbnail_generation,
+                inputs=[
+                    gr.Image(
+                        label="Frame Image",
+                        type="filepath",
+                    ),
+                    gr.Textbox(
+                        label="Video Script JSON",
+                        placeholder='{"scenes": [...], "music": {"mood": "energetic"}, "pacing": "fast", "narrative_structure": "..."}',
+                        lines=10,
+                        info="Paste the JSON script from Video Script Generator. Should include scenes, mood, pacing, and narrative structure.",
+                    ),
+                ],
+                outputs=[gr.Image(label="Generated Thumbnail", type="filepath")],
+                title="Thumbnail Generation",
+                description="Automatically generate engaging thumbnails with AI-generated text and stickers. Uses Gemini AI to analyze the frame and video script to create context-aware thumbnail designs with optimal text placement and sticker recommendations.",
+                api_name="thumbnail_generation",
             )
 
         with gr.Tab("Video Composer"):

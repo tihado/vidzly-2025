@@ -124,7 +124,7 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 - **Technology**: MoviePy for video composition, transitions, audio mixing
 - **Returns**: Path to final 30-second video
 
-#### 5.3 Thumbnail Extractor (`thumbnail_extractor.py`)
+#### 5.3 Frame Extractor (`frame_extractor.py`)
 
 - **Purpose**: Extract a representative frame from the final 30-second video to use as thumbnail
 - **Input**: Final video file path, extraction strategy (middle frame, best frame, or specific timestamp)
@@ -137,26 +137,27 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
   - **Custom timestamp**: Extract frame at specified time
   - **AI-selected**: Use Gemini Vision API to analyze frames and select most representative/engaging frame
 
-#### 5.4 Thumbnail Editor (`thumbnail_editor.py`)
+#### 5.4 Thumbnail Generation (`thumbnail_generation.py`)
 
-- **Purpose**: Add text overlays and stickers to create an engaging thumbnail
-- **Input**: Thumbnail image path, text content (optional), sticker preferences (optional), style preferences
-- **Output**: Final edited thumbnail image file path
-- **Technology**: Pillow (PIL) for image manipulation, text rendering, and sticker overlay
-- **Returns**: Path to final thumbnail with text and stickers
+- **Purpose**: Automatically generate engaging thumbnails with AI-generated text and stickers
+- **Input**: 
+  - Frame image path (from frame_extractor)
+  - Video script JSON (from video_script_generator) containing scenes, mood, pacing, narrative structure
+- **Output**: Final thumbnail image file path with text overlays and stickers
+- **Technology**: 
+  - Google Gemini Vision API for generate image with text content and sticker suggestions based on script context
+- **Returns**: Path to final thumbnail with AI-generated text and stickers
 - **Features**:
-  - **Text Overlays**: Add customizable text with:
-    - Font selection (bold, modern, decorative styles)
-    - Font size, color, and positioning
-    - Text effects (outline, shadow, gradient)
-    - Multiple text elements at different positions
-  - **Sticker Support**: Add decorative elements:
-    - Pre-defined sticker library (arrows, emojis, badges, frames)
-    - Custom sticker images (if provided)
-    - Sticker positioning and scaling
-    - Transparency and blending modes
-  - **Style Presets**: Apply pre-configured styles based on video mood/theme
-  - **Layout Templates**: Pre-designed thumbnail layouts for different video types
+  - **AI-Generated Text**: Gemini analyzes frame and script to generate:
+    - Engaging title text (3-7 words) that captures video essence
+    - Supporting subtitle text (optional)
+    - Optimal text positioning and color scheme
+  - **AI-Recommended Stickers**: Gemini suggests appropriate stickers:
+    - Badges (NEW, HOT, TRENDING)
+    - Arrows (directional indicators)
+    - Decorative elements (stars, shapes)
+    - Emojis and frames
+  - **Context-Aware Design**: Uses script mood, pacing, and narrative structure to inform design choices
 
 ### Phase 6: Workflow Orchestration
 
@@ -235,8 +236,8 @@ src/app/
 │   ├── scene_selector.py     # Select optimal scenes for 30s video
 │   ├── music_selector.py     # Choose background music
 │   ├── video_composer.py     # Combine clips and add music
-│   ├── thumbnail_extractor.py # Extract frame from video for thumbnail
-│   ├── thumbnail_editor.py   # Add text and stickers to thumbnail
+│   ├── frame_extractor.py    # Extract frame from video for thumbnail
+│   ├── thumbnail_generation.py # AI-generated thumbnails with text and stickers
 │   └── video_workflow.py     # Main workflow orchestrator
 └── utils/
     ├── __init__.py
@@ -353,8 +354,8 @@ The "Vidzly" tab in app.py will include:
 7. System clips selected scenes based on script
 8. System selects appropriate music based on script
 9. System composes final video according to script
-10. System extracts thumbnail frame from final video
-11. System creates final thumbnail with text and stickers
+10. System extracts thumbnail frame from final video (using frame_extractor)
+11. System generates final thumbnail with AI-generated text and stickers (using thumbnail_generation with script and frame)
 12. System returns final video, thumbnail, and script
 
 ## Script Format Example
@@ -417,37 +418,43 @@ The thumbnail extractor will support multiple extraction strategies:
 
 4. **Custom Timestamp**: Allow user to specify exact timestamp (future enhancement)
 
-### Thumbnail Editing Features
+### Thumbnail Generation Features
 
-The thumbnail editor will support:
+The thumbnail generation tool uses Gemini AI to automatically create engaging thumbnails:
 
-1. **Text Overlays**:
-   - Title text (main headline)
-   - Subtitle text (secondary information)
-   - Customizable fonts, sizes, colors
-   - Text positioning (top, center, bottom, custom)
-   - Text effects: outline, shadow, gradient, background boxes
+1. **AI-Generated Text Overlays**:
+   - Gemini analyzes the frame image and video script to generate:
+     - Catchy title text (3-7 words) that captures video essence
+     - Supporting subtitle text (optional, 5-10 words)
+   - Context-aware positioning based on frame composition
+   - Color scheme automatically selected for optimal contrast
+   - Text effects: outline, shadow for visibility
    - Auto-sizing based on thumbnail dimensions
 
-2. **Sticker Library**:
-   - Pre-built sticker categories:
-     - Arrows (pointing, directional indicators)
-     - Emojis (reactions, emotions)
-     - Badges (NEW, HOT, TRENDING, etc.)
-     - Frames (decorative borders)
-     - Decorative elements (stars, shapes, icons)
-   - Sticker positioning and scaling
+2. **AI-Recommended Stickers**:
+   - Gemini suggests appropriate stickers based on:
+     - Video mood and pacing from script
+     - Frame composition and visual elements
+     - Narrative structure and content type
+   - Sticker types:
+     - Badges (NEW, HOT, TRENDING) - suggested based on content freshness
+     - Arrows (pointing, directional indicators) - for action-oriented content
+     - Decorative elements (stars, shapes) - for engaging visuals
+     - Emojis and frames - contextually appropriate
+   - Automatic positioning and scaling
    - Transparency and blending support
 
-3. **Style Presets**:
-   - Auto-generate thumbnail style based on video mood/theme
-   - Pre-configured templates for different video types
-   - Color scheme matching video aesthetic
+3. **Context-Aware Design**:
+   - Uses video script data (mood, pacing, narrative structure) to inform design
+   - Analyzes frame composition to determine optimal text/sticker placement
+   - Matches color scheme to video aesthetic
+   - Adapts style (bold, minimal, playful, professional, dramatic) based on content
 
-4. **Layout Templates**:
-   - Text positioning templates (centered, top-left, bottom-right, etc.)
-   - Sticker placement templates
+4. **Intelligent Layout**:
+   - Text positioning automatically determined by frame analysis
+   - Sticker placement optimized to avoid covering important visual elements
    - Responsive sizing for different aspect ratios
+   - Ensures text and stickers enhance rather than distract from the frame
 
 ### Thumbnail Output Format
 
@@ -513,8 +520,7 @@ The thumbnail editor will support:
 
    - Implement music_selector.py
    - Implement video_composer.py
-   - Implement thumbnail_extractor.py
-   - Implement thumbnail_editor.py
+   - Implement thumbnail_generation.py (uses frame_extractor output)
    - Create sticker library/assets directory
 
 6. **Phase 6: Integration**
