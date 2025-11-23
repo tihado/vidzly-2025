@@ -8,6 +8,7 @@ import gradio as gr
 from introduction import introduction
 from tools.video_summarizer import video_summarizer
 from tools.video_clipper import video_clipper
+from tools.frame_extractor import frame_extractor
 from tools.video_composer import video_composer
 from tools.music_selector import music_selector
 
@@ -61,6 +62,30 @@ with gr.Blocks() as demo:
                 title="Video Clipper",
                 description="Extract a specific segment from a video file. Enter the start and end times in seconds to create a clipped version of your video.",
                 api_name="video_clipper",
+            )
+
+        with gr.Tab("Frame Extractor"):
+            gr.Interface(
+                fn=frame_extractor,
+                inputs=[
+                    gr.Video(label="Upload Video"),
+                    gr.Dropdown(
+                        choices=["middle", "best", "ai", "custom"],
+                        value="middle",
+                        label="Extraction Strategy",
+                        info="middle: Extract frame at middle of video | best: Select best quality frame | ai: Use AI to select most engaging frame | custom: Extract at specific timestamp",
+                    ),
+                    gr.Number(
+                        value=None,
+                        label="Custom Timestamp (seconds)",
+                        info="Required only if strategy is 'custom'. Leave empty otherwise.",
+                        precision=2,
+                    ),
+                ],
+                outputs=[gr.Image(label="Extracted Frame", type="filepath")],
+                title="Frame Extractor",
+                description="Extract a representative frame from a video. Supports multiple extraction strategies including middle frame, best quality frame, AI-selected frame, or custom timestamp.",
+                api_name="frame_extractor",
             )
 
         with gr.Tab("Video Composer"):

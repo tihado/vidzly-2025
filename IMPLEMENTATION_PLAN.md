@@ -9,7 +9,9 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 3. **Script Generation**: Create detailed script/storyboard for the final video
 4. **Selection**: Choose relevant scenes and music based on script
 5. **Processing**: Clip, edit, and combine videos according to script
-6. **Output**: Final 30-second video
+6. **Composition**: Create final 30-second video with music
+7. **Thumbnail Generation**: Extract frame and create engaging thumbnail with text/stickers
+8. **Output**: Final 30-second video + thumbnail image
 
 ## Required MCP Tools
 
@@ -122,15 +124,49 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 - **Technology**: MoviePy for video composition, transitions, audio mixing
 - **Returns**: Path to final 30-second video
 
+#### 5.3 Thumbnail Extractor (`thumbnail_extractor.py`)
+
+- **Purpose**: Extract a representative frame from the final 30-second video to use as thumbnail
+- **Input**: Final video file path, extraction strategy (middle frame, best frame, or specific timestamp)
+- **Output**: Thumbnail image file path (PNG/JPG)
+- **Technology**: OpenCV or MoviePy for frame extraction, optional AI-based frame selection
+- **Returns**: Path to extracted thumbnail image
+- **Extraction Strategies**:
+  - **Middle frame**: Extract frame at 15 seconds (middle of 30s video)
+  - **Best frame**: Use visual quality metrics (sharpness, contrast, composition) to select best frame
+  - **Custom timestamp**: Extract frame at specified time
+  - **AI-selected**: Use Gemini Vision API to analyze frames and select most representative/engaging frame
+
+#### 5.4 Thumbnail Editor (`thumbnail_editor.py`)
+
+- **Purpose**: Add text overlays and stickers to create an engaging thumbnail
+- **Input**: Thumbnail image path, text content (optional), sticker preferences (optional), style preferences
+- **Output**: Final edited thumbnail image file path
+- **Technology**: Pillow (PIL) for image manipulation, text rendering, and sticker overlay
+- **Returns**: Path to final thumbnail with text and stickers
+- **Features**:
+  - **Text Overlays**: Add customizable text with:
+    - Font selection (bold, modern, decorative styles)
+    - Font size, color, and positioning
+    - Text effects (outline, shadow, gradient)
+    - Multiple text elements at different positions
+  - **Sticker Support**: Add decorative elements:
+    - Pre-defined sticker library (arrows, emojis, badges, frames)
+    - Custom sticker images (if provided)
+    - Sticker positioning and scaling
+    - Transparency and blending modes
+  - **Style Presets**: Apply pre-configured styles based on video mood/theme
+  - **Layout Templates**: Pre-designed thumbnail layouts for different video types
+
 ### Phase 6: Workflow Orchestration
 
 #### 6.1 Video Workflow Orchestrator (`video_workflow.py`)
 
 - **Purpose**: Main workflow that coordinates all tools
 - **Input**: List of video files, user description
-- **Output**: Final video file path, processing summary, generated script
+- **Output**: Final video file path, thumbnail image path, processing summary, generated script
 - **Technology**: Orchestrates all MCP tools in sequence
-- **Returns**: Final video, processing report, and script JSON
+- **Returns**: Final video, thumbnail image, processing report, and script JSON
 
 ## Implementation Phases
 
@@ -163,7 +199,9 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 
 1. Implement Music Selector (start with simple mood-based selection)
 2. Implement Video Composer
-3. Test full composition pipeline with script
+3. Implement Thumbnail Extractor
+4. Implement Thumbnail Editor
+5. Test full composition pipeline with script and thumbnail generation
 
 ### Phase 6: Integration & UI
 
@@ -197,11 +235,21 @@ src/app/
 │   ├── scene_selector.py     # Select optimal scenes for 30s video
 │   ├── music_selector.py     # Choose background music
 │   ├── video_composer.py     # Combine clips and add music
+│   ├── thumbnail_extractor.py # Extract frame from video for thumbnail
+│   ├── thumbnail_editor.py   # Add text and stickers to thumbnail
 │   └── video_workflow.py     # Main workflow orchestrator
 └── utils/
     ├── __init__.py
     ├── file_manager.py       # Handle temporary file storage
     └── video_utils.py        # Shared video processing utilities
+└── assets/
+    └── stickers/             # Sticker image library
+        ├── arrows/           # Arrow stickers
+        ├── emojis/           # Emoji stickers
+        ├── badges/           # Badge/ribbon stickers
+        ├── frames/           # Frame/border stickers
+        ├── decorative/       # Decorative elements
+        └── stickers.json     # Sticker metadata and catalog
 ```
 
 ## File Storage Strategy
@@ -224,9 +272,16 @@ src/app/
 
 3. **Final Output Storage**
    - Store final videos in: `src/app/outputs/` or `temp/{session_id}/final/`
-   - Return file path to Gradio `gr.Video` component for display/download
-   - Gradio will serve the file from this path
+   - Store thumbnails in: `temp/{session_id}/thumbnails/` or alongside final videos
+   - Return file paths to Gradio `gr.Video` and `gr.Image` components for display/download
+   - Gradio will serve the files from these paths
    - Implement cleanup policy (e.g., delete after 24 hours)
+
+4. **Sticker Assets Storage**
+   - Store sticker images in: `src/app/assets/stickers/`
+   - Organize by category: `arrows/`, `emojis/`, `badges/`, `frames/`, `decorative/`
+   - Support PNG with transparency for stickers
+   - Include metadata file (JSON) describing available stickers and their categories
 
 ### File Manager Implementation
 
@@ -281,10 +336,11 @@ The "Vidzly" tab in app.py will include:
 1. **Video Upload Section**: Multiple file upload component
 2. **Description Input**: Text area for user description
 3. **Process Button**: Trigger workflow
-4. **Progress Display**: Show current step (analyzing, generating script, selecting scenes, composing, etc.)
+4. **Progress Display**: Show current step (analyzing, generating script, selecting scenes, composing, creating thumbnail, etc.)
 5. **Script Preview**: Display generated script (optional, collapsible)
 6. **Output Video**: Display final 30-second video
-7. **Download Button**: Allow user to download result
+7. **Thumbnail Preview**: Display generated thumbnail image
+8. **Download Buttons**: Allow user to download video and thumbnail separately
 
 ## Workflow Sequence
 
@@ -297,7 +353,9 @@ The "Vidzly" tab in app.py will include:
 7. System clips selected scenes based on script
 8. System selects appropriate music based on script
 9. System composes final video according to script
-10. System returns final video and script
+10. System extracts thumbnail frame from final video
+11. System creates final thumbnail with text and stickers
+12. System returns final video, thumbnail, and script
 
 ## Script Format Example
 
@@ -335,6 +393,68 @@ The "Vidzly" tab in app.py will include:
   "narrative_structure": "hook -> build -> climax -> resolution"
 }
 ```
+
+## Thumbnail Generation Strategy
+
+### Thumbnail Extraction
+
+The thumbnail extractor will support multiple extraction strategies:
+
+1. **Default (Middle Frame)**: Extract frame at 15 seconds (middle of 30s video)
+   - Simple and fast
+   - Ensures representative frame from video
+
+2. **Best Frame Selection**: Analyze multiple frames and select best based on:
+   - Visual sharpness (Laplacian variance)
+   - Contrast and brightness levels
+   - Composition quality (rule of thirds, subject positioning)
+   - Motion blur detection (prefer less blur)
+
+3. **AI-Selected Frame**: Use Gemini Vision API to:
+   - Analyze key frames at intervals (e.g., every 2-3 seconds)
+   - Select most engaging/representative frame
+   - Consider visual appeal, subject clarity, and composition
+
+4. **Custom Timestamp**: Allow user to specify exact timestamp (future enhancement)
+
+### Thumbnail Editing Features
+
+The thumbnail editor will support:
+
+1. **Text Overlays**:
+   - Title text (main headline)
+   - Subtitle text (secondary information)
+   - Customizable fonts, sizes, colors
+   - Text positioning (top, center, bottom, custom)
+   - Text effects: outline, shadow, gradient, background boxes
+   - Auto-sizing based on thumbnail dimensions
+
+2. **Sticker Library**:
+   - Pre-built sticker categories:
+     - Arrows (pointing, directional indicators)
+     - Emojis (reactions, emotions)
+     - Badges (NEW, HOT, TRENDING, etc.)
+     - Frames (decorative borders)
+     - Decorative elements (stars, shapes, icons)
+   - Sticker positioning and scaling
+   - Transparency and blending support
+
+3. **Style Presets**:
+   - Auto-generate thumbnail style based on video mood/theme
+   - Pre-configured templates for different video types
+   - Color scheme matching video aesthetic
+
+4. **Layout Templates**:
+   - Text positioning templates (centered, top-left, bottom-right, etc.)
+   - Sticker placement templates
+   - Responsive sizing for different aspect ratios
+
+### Thumbnail Output Format
+
+- **Format**: PNG (supports transparency) or JPG
+- **Dimensions**: Standard thumbnail sizes (1280x720, 1920x1080, or match video aspect ratio)
+- **Quality**: High resolution suitable for social media platforms
+- **File Naming**: `{video_name}_thumbnail.png`
 
 ## Error Handling Strategy
 
@@ -393,6 +513,9 @@ The "Vidzly" tab in app.py will include:
 
    - Implement music_selector.py
    - Implement video_composer.py
+   - Implement thumbnail_extractor.py
+   - Implement thumbnail_editor.py
+   - Create sticker library/assets directory
 
 6. **Phase 6: Integration**
 
