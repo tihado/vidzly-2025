@@ -14,6 +14,18 @@ from tools.video_composer import video_composer
 from tools.music_selector import music_selector
 
 
+def frame_extractor_wrapper(video_input, thumbnail_timeframe=None):
+    """
+    Wrapper function for frame_extractor to handle Gradio interface inputs.
+    Maps the Gradio inputs to the correct function parameters.
+    """
+    return frame_extractor(
+        video_input=video_input,
+        output_path=None,
+        thumbnail_timeframe=thumbnail_timeframe,
+    )
+
+
 with gr.Blocks() as demo:
     with gr.Tab("Vidzly"):
         # Tell about this project
@@ -67,13 +79,20 @@ with gr.Blocks() as demo:
 
         with gr.Tab("Frame Extractor"):
             gr.Interface(
-                fn=frame_extractor,
+                fn=frame_extractor_wrapper,
                 inputs=[
                     gr.Video(label="Upload Video"),
+                    gr.Number(
+                        value=None,
+                        label="Thumbnail Timeframe (Optional - seconds)",
+                        minimum=0.0,
+                        step=0.1,
+                        info="Optional: Provide a timestamp in seconds to extract a frame at that specific time. If not provided, AI will analyze the video to find the best frame. You can get this value from the 'thumbnail_timeframe' field in Video Summarizer's JSON output.",
+                    ),
                 ],
                 outputs=[gr.Image(label="Extracted Frame", type="filepath")],
                 title="Frame Extractor",
-                description="Extract a representative frame from a video using AI (Gemini Vision API) to select the most engaging frame.",
+                description="Extract a representative frame from a video. If you provide a thumbnail timeframe (e.g., from Video Summarizer), it will use that timestamp directly without calling AI. Otherwise, it uses Gemini AI to analyze the video and select the most engaging frame.",
                 api_name="frame_extractor",
             )
 
