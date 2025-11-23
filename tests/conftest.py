@@ -68,3 +68,15 @@ def real_video_file():
     
     return video_path
 
+
+@pytest.fixture
+def real_video_file_2():
+    """Get path to second real video file in tests/data directory."""
+    test_dir = os.path.dirname(os.path.abspath(__file__))
+    video_path = os.path.join(test_dir, "data", "dodo_2.mov")
+    
+    if not os.path.exists(video_path):
+        pytest.skip(f"Test video file not found: {video_path}")
+    
+    return video_path
+

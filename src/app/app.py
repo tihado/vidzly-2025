@@ -8,6 +8,7 @@ import gradio as gr
 from introduction import introduction
 from tools.video_summarizer import video_summarizer
 from tools.video_clipper import video_clipper
+from tools.video_composer import video_composer
 
 
 with gr.Blocks() as demo:
@@ -59,6 +60,32 @@ with gr.Blocks() as demo:
                 title="Video Clipper",
                 description="Extract a specific segment from a video file. Enter the start and end times in seconds to create a clipped version of your video.",
                 api_name="video_clipper",
+            )
+
+        with gr.Tab("Video Composer"):
+            gr.Interface(
+                fn=video_composer,
+                inputs=[
+                    gr.Textbox(
+                        label="Script (JSON)",
+                        placeholder='{"total_duration": 30.0, "scenes": [{"scene_id": 1, "source_video": 0, "start_time": 0.0, "end_time": 5.0, "duration": 5.0, "transition_in": "fade", "transition_out": "crossfade"}]}',
+                        lines=10,
+                    ),
+                    gr.File(
+                        label="Video Clips (Required - source videos)",
+                        file_count="multiple",
+                        file_types=["video"],
+                    ),
+                    gr.File(
+                        label="Music File (Optional)",
+                        file_count="single",
+                        file_types=["audio"],
+                    ),
+                ],
+                outputs=[gr.Video(label="Composed Video")],
+                title="Video Composer",
+                description="Combine video clips, add music, and apply transitions according to a script. Upload source videos, then provide a JSON script where each scene's 'source_video' references a video by index (0-based) or filename. The same video can be used in multiple scenes with different time ranges.",
+                api_name="video_composer",
             )
 
 

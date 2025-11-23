@@ -97,7 +97,17 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 #### 5.2 Video Composer (`video_composer.py`)
 
 - **Purpose**: Combine video clips, add music, apply transitions according to script
-- **Input**: List of video clip paths, music path, script with transitions
+- **Input**:
+  - `script`: JSON script with scene information (required)
+  - `video_clips`: List of source video file paths (required)
+  - `music_path`: Background music file path (optional)
+  - `output_path`: Output file path (optional)
+- **Script Format**:
+  - Each scene's `source_video` references a video from `video_clips` by:
+    - Integer index (0-based): `"source_video": 0` references the first video
+    - Filename string: `"source_video": "video.mp4"` matches by basename
+  - The same video can be used in multiple scenes with different time ranges
+  - Each scene specifies `start_time`, `end_time`, and transition types
 - **Output**: Final composed video file path
 - **Technology**: MoviePy for video composition, transitions, audio mixing
 - **Returns**: Path to final 30-second video
