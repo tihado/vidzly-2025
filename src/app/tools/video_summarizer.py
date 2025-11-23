@@ -2,6 +2,7 @@ import cv2
 import json
 import os
 import mimetypes
+import re
 import google.genai as genai
 
 
@@ -15,7 +16,7 @@ def video_summarizer(video_input, fps: float = 2.0) -> str:
         fps (float): Frames per second for video processing by Gemini (default: 2.0, range: 0.1-24.0)
 
     Returns:
-        str: JSON string containing video summary with key scenes, detected objects/activities, and mood tags
+        str: JSON string containing video summary with key scenes, detected objects/activities, mood tags, and thumbnail_timeframe (in seconds)
     """
     try:
         # Handle Gradio video input format (can be tuple or string)
@@ -47,6 +48,8 @@ def video_summarizer(video_input, fps: float = 2.0) -> str:
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
             # Fallback: return basic metadata without AI analysis
+            # Use middle of video as default thumbnail timeframe
+            thumbnail_timeframe = round(duration / 2, 2) if duration > 0 else 0
             return json.dumps(
                 {
                     "duration": round(duration, 2),
@@ -57,6 +60,7 @@ def video_summarizer(video_input, fps: float = 2.0) -> str:
                     "key_scenes": [],
                     "detected_objects": [],
                     "mood_tags": [],
+                    "thumbnail_timeframe": thumbnail_timeframe,
                 }
             )
 
@@ -81,6 +85,7 @@ def video_summarizer(video_input, fps: float = 2.0) -> str:
 3. Detected objects/activities - List the main objects, people, activities, or subjects visible in the video
 4. Mood and style tags - Identify the mood and style (e.g., energetic, calm, dramatic, fun, professional, casual, bright, dark, colorful, minimalist, fast-paced, slow-paced)
 5. Visual style description - Describe the visual aesthetics, color palette, lighting, and overall style
+6. Recommended thumbnail timestamp - Suggest the best timestamp (in seconds) to use as a thumbnail. This should be a visually representative moment that captures the essence of the video. Format your answer as: "THUMBNAIL_TIMESTAMP: X.XX seconds" where X.XX is the timestamp.
 
 Format your response as a structured, detailed summary that captures the essence of the video."""
 
@@ -120,6 +125,26 @@ Format your response as a structured, detailed summary that captures the essence
             mood for mood in mood_keywords if mood.lower() in summary_text.lower()
         ]
 
+        # Extract thumbnail timestamp from response
+        thumbnail_timeframe = None
+        # Try to find "THUMBNAIL_TIMESTAMP: X.XX seconds" pattern
+        timestamp_pattern = r"THUMBNAIL_TIMESTAMP:\s*([\d.]+)\s*seconds?"
+        match = re.search(timestamp_pattern, summary_text, re.IGNORECASE)
+        if match:
+            try:
+                thumbnail_timeframe = float(match.group(1))
+                # Ensure timestamp is within video duration
+                if thumbnail_timeframe > duration:
+                    thumbnail_timeframe = duration / 2
+                elif thumbnail_timeframe < 0:
+                    thumbnail_timeframe = 0
+            except ValueError:
+                thumbnail_timeframe = None
+        
+        # Fallback: use middle of video if extraction failed
+        if thumbnail_timeframe is None:
+            thumbnail_timeframe = round(duration / 2, 2) if duration > 0 else 0
+
         # Structure the response
         result = {
             "duration": round(duration, 2),
@@ -128,6 +153,7 @@ Format your response as a structured, detailed summary that captures the essence
             "frame_count": frame_count,
             "summary": summary_text,
             "mood_tags": detected_moods if detected_moods else ["general"],
+            "thumbnail_timeframe": round(thumbnail_timeframe, 2),
         }
 
         return json.dumps(result, indent=2)
