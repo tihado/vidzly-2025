@@ -78,8 +78,19 @@ To update all dependencies to their latest compatible versions:
 poetry update
 ```
 
+### Running the Application
+
+```bash
+poetry run python src/app/app.py
+```
+
+## Adding a New MCP Tool
+
+For detailed instructions on how to add a new MCP tool to the application, see [ADDING_MCP_TOOLS.md](ADDING_MCP_TOOLS.md).
+
 ### Contributors
+
 - 🐱 [honghanhh](https://github.com/honghanhh)🐱
-- 🦊 [nvti](https://github.com/nvti)🦊 
+- 🦊 [nvti](https://github.com/nvti)🦊
 - 🐻 [Nlag](https://github.com/NLag)🐻
 - 🐰 [DaphneeCh](https://github.com/DaphneeCh)🐰
