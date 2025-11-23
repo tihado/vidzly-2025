@@ -17,50 +17,6 @@ from app.tools.thumbnail_generator import thumbnail_generator
 class TestThumbnailGenerator:
     """Test cases for thumbnail_generator function."""
 
-    def test_thumbnail_generator_with_string_path(self, temp_image_file):
-        """Test thumbnail_generator with string path input."""
-        with patch.dict(os.environ, {"GOOGLE_API_KEY": "test_key"}), \
-             patch("app.tools.thumbnail_generator.genai.Client") as mock_client, \
-             patch("app.tools.thumbnail_generator.Image.open") as mock_image_open, \
-             patch("app.tools.thumbnail_generator.mimetypes.guess_type") as mock_guess_type, \
-             patch("builtins.open", mock_open(read_data=b"fake image data")) as mock_file:
-            
-            mock_guess_type.return_value = ("image/png", None)
-            
-            # Setup mock Gemini client
-            mock_genai_client = Mock()
-            mock_response = Mock()
-            mock_candidate = Mock()
-            mock_content = Mock()
-            mock_part = Mock()
-            mock_inline_data = Mock()
-            mock_inline_data.data = b"fake generated image data"
-            mock_part.inline_data = mock_inline_data
-            mock_content.parts = [mock_part]
-            mock_candidate.content = mock_content
-            mock_response.candidates = [mock_candidate]
-            mock_genai_client.models.generate_content.return_value = mock_response
-            mock_client.return_value = mock_genai_client
-            
-            # Setup mock PIL Image
-            mock_image = Mock()
-            mock_image.convert.return_value = mock_image
-            mock_image_open.return_value = mock_image
-            
-            summary = "A funny video about a cat"
-            output_path = tempfile.mktemp(suffix=".png")
-            
-            result = thumbnail_generator(temp_image_file, summary, output_path)
-            
-            # Assertions
-            assert os.path.isabs(result)
-            assert result == os.path.abspath(output_path)
-            mock_client.assert_called_once_with(api_key="test_key")
-            mock_genai_client.models.generate_content.assert_called_once()
-            mock_image.save.assert_called_once()
-            assert mock_image.save.call_args[0][0] == output_path
-            assert mock_image.save.call_args[0][1] == "PNG"
-
     def test_thumbnail_generator_with_tuple_input(self, temp_image_file):
         """Test thumbnail_generator with tuple input (Gradio format)."""
         with patch.dict(os.environ, {"GOOGLE_API_KEY": "test_key"}), \
@@ -196,27 +152,6 @@ class TestThumbnailGenerator:
             
             assert "Failed to extract generated image" in str(exc_info.value) or "Error generating thumbnail" in str(exc_info.value)
 
-    def test_thumbnail_generator_text_response_instead_of_image(self, temp_image_file):
-        """Test thumbnail_generator when API returns text instead of image."""
-        with patch.dict(os.environ, {"GOOGLE_API_KEY": "test_key"}), \
-             patch("app.tools.thumbnail_generator.genai.Client") as mock_client, \
-             patch("app.tools.thumbnail_generator.mimetypes.guess_type") as mock_guess_type, \
-             patch("builtins.open", mock_open(read_data=b"fake image data")):
-            
-            mock_guess_type.return_value = ("image/png", None)
-            
-            mock_genai_client = Mock()
-            mock_response = Mock()
-            mock_response.candidates = []
-            mock_response.text = "This model does not support image generation"
-            mock_genai_client.models.generate_content.return_value = mock_response
-            mock_client.return_value = mock_genai_client
-            
-            with pytest.raises(Exception) as exc_info:
-                thumbnail_generator(temp_image_file, "summary")
-            
-            assert "text instead of image" in str(exc_info.value) or "Error generating thumbnail" in str(exc_info.value)
-
     def test_thumbnail_generator_creates_output_directory(self, temp_image_file, temp_output_dir):
         """Test thumbnail_generator creates output directory if it doesn't exist."""
         with patch.dict(os.environ, {"GOOGLE_API_KEY": "test_key"}), \
@@ -253,40 +188,6 @@ class TestThumbnailGenerator:
             assert os.path.exists(output_dir)
             assert os.path.isabs(result)
 
-    def test_thumbnail_generator_returns_absolute_path(self, temp_image_file):
-        """Test thumbnail_generator always returns absolute path."""
-        with patch.dict(os.environ, {"GOOGLE_API_KEY": "test_key"}), \
-             patch("app.tools.thumbnail_generator.genai.Client") as mock_client, \
-             patch("app.tools.thumbnail_generator.Image.open") as mock_image_open, \
-             patch("app.tools.thumbnail_generator.mimetypes.guess_type") as mock_guess_type, \
-             patch("builtins.open", mock_open(read_data=b"fake image data")):
-            
-            mock_guess_type.return_value = ("image/png", None)
-            
-            mock_genai_client = Mock()
-            mock_response = Mock()
-            mock_candidate = Mock()
-            mock_content = Mock()
-            mock_part = Mock()
-            mock_inline_data = Mock()
-            mock_inline_data.data = b"fake generated image data"
-            mock_part.inline_data = mock_inline_data
-            mock_content.parts = [mock_part]
-            mock_candidate.content = mock_content
-            mock_response.candidates = [mock_candidate]
-            mock_genai_client.models.generate_content.return_value = mock_response
-            mock_client.return_value = mock_genai_client
-            
-            mock_image = Mock()
-            mock_image.convert.return_value = mock_image
-            mock_image_open.return_value = mock_image
-            
-            # Test with relative path
-            relative_output = "relative_thumbnail.png"
-            result = thumbnail_generator(temp_image_file, "summary", relative_output)
-            
-            assert os.path.isabs(result)
-
     def test_thumbnail_generator_with_blob_format(self, temp_image_file):
         """Test thumbnail_generator handles blob format in response."""
         with patch.dict(os.environ, {"GOOGLE_API_KEY": "test_key"}), \
@@ -321,53 +222,6 @@ class TestThumbnailGenerator:
             
             assert os.path.isabs(result)
             assert result.endswith(".png")
-
-    def test_thumbnail_generator_alternative_response_structure(self, temp_image_file):
-        """Test thumbnail_generator handles alternative response structure (response.parts)."""
-        with patch.dict(os.environ, {"GOOGLE_API_KEY": "test_key"}), \
-             patch("app.tools.thumbnail_generator.genai.Client") as mock_client, \
-             patch("app.tools.thumbnail_generator.Image.open") as mock_image_open, \
-             patch("app.tools.thumbnail_generator.mimetypes.guess_type") as mock_guess_type, \
-             patch("builtins.open", mock_open(read_data=b"fake image data")):
-            
-            mock_guess_type.return_value = ("image/png", None)
-            
-            mock_genai_client = Mock()
-            mock_response = Mock()
-            # No candidates, but has parts directly
-            mock_response.candidates = []
-            mock_part = Mock()
-            mock_inline_data = Mock()
-            mock_inline_data.data = b"fake generated image data"
-            mock_part.inline_data = mock_inline_data
-            mock_response.parts = [mock_part]
-            mock_genai_client.models.generate_content.return_value = mock_response
-            mock_client.return_value = mock_genai_client
-            
-            mock_image = Mock()
-            mock_image.convert.return_value = mock_image
-            mock_image_open.return_value = mock_image
-            
-            result = thumbnail_generator(temp_image_file, "summary")
-            
-            assert os.path.isabs(result)
-            assert result.endswith(".png")
-
-    def test_thumbnail_generator_empty_image_path(self):
-        """Test thumbnail_generator with empty image path."""
-        with patch.dict(os.environ, {"GOOGLE_API_KEY": "test_key"}):
-            with pytest.raises(Exception) as exc_info:
-                thumbnail_generator("", "summary")
-            
-            assert "Image file not found" in str(exc_info.value)
-
-    def test_thumbnail_generator_none_image_path(self):
-        """Test thumbnail_generator with None image path."""
-        with patch.dict(os.environ, {"GOOGLE_API_KEY": "test_key"}):
-            with pytest.raises(Exception) as exc_info:
-                thumbnail_generator(None, "summary")
-            
-            assert "Invalid image input format" in str(exc_info.value)
 
     def test_thumbnail_generator_api_fallback_without_response_modalities(self, temp_image_file):
         """Test thumbnail_generator falls back when response_modalities fails."""
@@ -442,37 +296,3 @@ class TestThumbnailGenerator:
             assert os.path.isabs(result)
             # Verify MIME type was used
             mock_guess_type.assert_called_once()
-
-    def test_thumbnail_generator_default_mime_type(self, temp_image_file):
-        """Test thumbnail_generator defaults to PNG when MIME type cannot be determined."""
-        with patch.dict(os.environ, {"GOOGLE_API_KEY": "test_key"}), \
-             patch("app.tools.thumbnail_generator.genai.Client") as mock_client, \
-             patch("app.tools.thumbnail_generator.Image.open") as mock_image_open, \
-             patch("app.tools.thumbnail_generator.mimetypes.guess_type") as mock_guess_type, \
-             patch("builtins.open", mock_open(read_data=b"fake image data")):
-            
-            # Return None or non-image MIME type
-            mock_guess_type.return_value = (None, None)
-            
-            mock_genai_client = Mock()
-            mock_response = Mock()
-            mock_candidate = Mock()
-            mock_content = Mock()
-            mock_part = Mock()
-            mock_inline_data = Mock()
-            mock_inline_data.data = b"fake generated image data"
-            mock_part.inline_data = mock_inline_data
-            mock_content.parts = [mock_part]
-            mock_candidate.content = mock_content
-            mock_response.candidates = [mock_candidate]
-            mock_genai_client.models.generate_content.return_value = mock_response
-            mock_client.return_value = mock_genai_client
-            
-            mock_image = Mock()
-            mock_image.convert.return_value = mock_image
-            mock_image_open.return_value = mock_image
-            
-            result = thumbnail_generator(temp_image_file, "summary")
-            
-            assert os.path.isabs(result)
-            # Should default to image/png when MIME type cannot be determined

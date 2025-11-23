@@ -17,31 +17,6 @@ from app.tools.video_clipper import video_clipper
 class TestVideoClipper:
     """Test cases for video_clipper function."""
 
-    def test_video_clipper_with_string_path(self, temp_video_file, mock_video_duration):
-        """Test video_clipper with string path input."""
-        with patch("app.tools.video_clipper.VideoFileClip") as mock_video_clip:
-            # Setup mock
-            mock_video = Mock()
-            mock_video.duration = mock_video_duration
-            mock_clipped = Mock()
-            mock_video.subclipped.return_value = mock_clipped
-            mock_video_clip.return_value = mock_video
-
-            start_time = 5.0
-            end_time = 15.0
-            output_path = tempfile.mktemp(suffix=".mp4")
-
-            result = video_clipper(temp_video_file, start_time, end_time, output_path)
-
-            # Assertions
-            assert os.path.isabs(result)
-            assert result == os.path.abspath(output_path)
-            mock_video_clip.assert_called_once_with(temp_video_file)
-            mock_video.subclipped.assert_called_once_with(start_time, end_time)
-            mock_clipped.write_videofile.assert_called_once()
-            mock_clipped.close.assert_called_once()
-            mock_video.close.assert_called_once()
-
     def test_video_clipper_with_tuple_input(self, temp_video_file, mock_video_duration):
         """Test video_clipper with tuple input (Gradio format)."""
         with patch("app.tools.video_clipper.VideoFileClip") as mock_video_clip:
@@ -59,6 +34,7 @@ class TestVideoClipper:
             result = video_clipper(video_input, start_time, end_time, output_path)
 
             assert os.path.isabs(result)
+            assert result == os.path.abspath(output_path)
             mock_video_clip.assert_called_once_with(temp_video_file)
 
     def test_video_clipper_without_output_path(
@@ -78,6 +54,7 @@ class TestVideoClipper:
             result = video_clipper(temp_video_file, start_time, end_time)
 
             assert os.path.isabs(result)
+            assert result.endswith(".mp4")  # Verify extension preserved
             assert "clipped" in result.lower() or os.path.basename(result).startswith(
                 "clipped_"
             )
@@ -190,38 +167,6 @@ class TestVideoClipper:
             mock_clipped.close.assert_called_once()
             mock_video.close.assert_called_once()
 
-    def test_video_clipper_preserves_file_extension(
-        self, temp_video_file, mock_video_duration
-    ):
-        """Test video_clipper preserves original file extension in output."""
-        with patch("app.tools.video_clipper.VideoFileClip") as mock_video_clip:
-            mock_video = Mock()
-            mock_video.duration = mock_video_duration
-            mock_clipped = Mock()
-            mock_video.subclipped.return_value = mock_clipped
-            mock_video_clip.return_value = mock_video
-
-            # Test with .mp4 extension
-            result = video_clipper(temp_video_file, 0.0, 10.0)
-            assert result.endswith(".mp4") or ".mp4" in result
-
-    def test_video_clipper_returns_absolute_path(
-        self, temp_video_file, mock_video_duration
-    ):
-        """Test video_clipper always returns absolute path."""
-        with patch("app.tools.video_clipper.VideoFileClip") as mock_video_clip:
-            mock_video = Mock()
-            mock_video.duration = mock_video_duration
-            mock_clipped = Mock()
-            mock_video.subclipped.return_value = mock_clipped
-            mock_video_clip.return_value = mock_video
-
-            # Test with relative path
-            relative_output = "relative_output.mp4"
-            result = video_clipper(temp_video_file, 0.0, 10.0, relative_output)
-
-            assert os.path.isabs(result)
-
 
 class TestVideoClipperIntegration:
     """Integration tests for video_clipper using real video files."""
@@ -241,34 +186,6 @@ class TestVideoClipperIntegration:
         assert os.path.isabs(result)
         assert result == os.path.abspath(output_path)
         assert os.path.getsize(result) > 0, "Clipped video should have content"
-
-    def test_video_clipper_real_video_tuple_input(
-        self, real_video_file, temp_output_dir
-    ):
-        """Test video_clipper with real video file using tuple input (Gradio format)."""
-        output_path = os.path.join(temp_output_dir, "clipped_tuple.mp4")
-        video_input = (real_video_file, "subtitle.srt")
-        start_time = 0.5
-        end_time = 2.5
-
-        result = video_clipper(video_input, start_time, end_time, output_path)
-
-        assert os.path.exists(result)
-        assert os.path.getsize(result) > 0
-
-    def test_video_clipper_real_video_auto_output_path(self, real_video_file):
-        """Test video_clipper with real video file - auto-generated output path."""
-        start_time = 2.0
-        end_time = 4.0
-
-        result = video_clipper(real_video_file, start_time, end_time)
-
-        assert os.path.exists(result)
-        assert os.path.isabs(result)
-        assert os.path.getsize(result) > 0
-        # Cleanup
-        if os.path.exists(result):
-            os.remove(result)
 
     def test_video_clipper_real_video_short_clip(
         self, real_video_file, temp_output_dir

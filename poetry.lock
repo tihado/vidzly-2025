@@ -711,7 +711,6 @@ version = "2.24.0"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.8"
-groups = ["main"]
 files = [
     {file = "elevenlabs-2.24.0-py3-none-any.whl", hash = "sha256:b8d0435f84a3bc0592dd086b4945bd79d9430c6892bf3f75752c03bb53ae3ad6"},
     {file = "elevenlabs-2.24.0.tar.gz", hash = "sha256:bd5278ea8521aeb463ef4649192b5aa8cedf12be7f9b3ca19c79331a7d33d305"},

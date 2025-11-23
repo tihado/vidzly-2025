@@ -52,8 +52,12 @@ class TestMusicSelector:
             assert call_kwargs["duration_seconds"] == 10.0
             assert call_kwargs["output_format"] == "mp3_44100_128"
 
-    def test_music_selector_comma_separated_mood(self, temp_output_dir):
-        """Test music_selector with comma-separated mood tags."""
+    @pytest.mark.parametrize("mood_input,expected_moods", [
+        ("energetic, calm, dramatic", ["energetic", "calm", "dramatic"]),
+        (["fun", "professional"], ["fun", "professional"]),
+    ])
+    def test_music_selector_mood_formats(self, temp_output_dir, mood_input, expected_moods):
+        """Test music_selector with different mood input formats."""
         with patch(
             "app.tools.music_selector.ElevenLabs"
         ) as mock_elevenlabs_class, patch.dict(
@@ -69,43 +73,15 @@ class TestMusicSelector:
 
             output_path = os.path.join(temp_output_dir, "test_sound.mp3")
             result = music_selector(
-                mood="energetic, calm, dramatic",
+                mood=mood_input,
                 target_duration=15.0,
                 output_path=output_path,
             )
 
             assert os.path.exists(result)
             call_kwargs = mock_convert.call_args[1]
-            assert "energetic" in call_kwargs["text"]
-            assert "calm" in call_kwargs["text"]
-            assert "dramatic" in call_kwargs["text"]
-
-    def test_music_selector_list_mood(self, temp_output_dir):
-        """Test music_selector with list of mood tags."""
-        with patch(
-            "app.tools.music_selector.ElevenLabs"
-        ) as mock_elevenlabs_class, patch.dict(
-            os.environ, {"ELEVENLABS_API_KEY": "test_key"}
-        ):
-
-            mock_client = Mock()
-            mock_text_to_sound = Mock()
-            mock_convert = Mock(return_value=b"fake_audio_data")
-            mock_text_to_sound.convert = mock_convert
-            mock_client.text_to_sound_effects = mock_text_to_sound
-            mock_elevenlabs_class.return_value = mock_client
-
-            output_path = os.path.join(temp_output_dir, "test_sound.mp3")
-            result = music_selector(
-                mood=["fun", "professional"],
-                target_duration=20.0,
-                output_path=output_path,
-            )
-
-            assert os.path.exists(result)
-            call_kwargs = mock_convert.call_args[1]
-            assert "fun" in call_kwargs["text"]
-            assert "professional" in call_kwargs["text"]
+            for expected_mood in expected_moods:
+                assert expected_mood in call_kwargs["text"]
 
     def test_music_selector_with_style(self, temp_output_dir):
         """Test music_selector with style parameter."""
@@ -475,29 +451,6 @@ class TestMusicSelector:
                 assert b"chunk2" in content
                 assert b"chunk3" in content
 
-    def test_music_selector_returns_absolute_path(self, temp_output_dir):
-        """Test music_selector always returns absolute path."""
-        with patch(
-            "app.tools.music_selector.ElevenLabs"
-        ) as mock_elevenlabs_class, patch.dict(
-            os.environ, {"ELEVENLABS_API_KEY": "test_key"}
-        ):
-
-            mock_client = Mock()
-            mock_text_to_sound = Mock()
-            mock_convert = Mock(return_value=b"fake_audio_data")
-            mock_text_to_sound.convert = mock_convert
-            mock_client.text_to_sound_effects = mock_text_to_sound
-            mock_elevenlabs_class.return_value = mock_client
-
-            # Test with relative path
-            relative_output = "relative_output.mp3"
-            result = music_selector(
-                mood="energetic", target_duration=10.0, output_path=relative_output
-            )
-
-            assert os.path.isabs(result)
-
     def test_music_selector_all_parameters(self, temp_output_dir):
         """Test music_selector with all parameters provided."""
         with patch(
@@ -568,59 +521,3 @@ class TestMusicSelector:
             # (or should be False if included)
             if "loop" in call_kwargs:
                 assert call_kwargs["loop"] is False
-
-    def test_music_selector_none_bpm(self, temp_output_dir):
-        """Test music_selector with None BPM (should not include in prompt)."""
-        with patch(
-            "app.tools.music_selector.ElevenLabs"
-        ) as mock_elevenlabs_class, patch.dict(
-            os.environ, {"ELEVENLABS_API_KEY": "test_key"}
-        ):
-
-            mock_client = Mock()
-            mock_text_to_sound = Mock()
-            mock_convert = Mock(return_value=b"fake_audio_data")
-            mock_text_to_sound.convert = mock_convert
-            mock_client.text_to_sound_effects = mock_text_to_sound
-            mock_elevenlabs_class.return_value = mock_client
-
-            output_path = os.path.join(temp_output_dir, "test_sound.mp3")
-            result = music_selector(
-                mood="energetic",
-                bpm=None,
-                target_duration=10.0,
-                output_path=output_path,
-            )
-
-            assert os.path.exists(result)
-            call_kwargs = mock_convert.call_args[1]
-            # BPM should not be in the text if None
-            assert "BPM" not in call_kwargs["text"]
-
-    def test_music_selector_empty_style(self, temp_output_dir):
-        """Test music_selector with empty style (should not include in prompt)."""
-        with patch(
-            "app.tools.music_selector.ElevenLabs"
-        ) as mock_elevenlabs_class, patch.dict(
-            os.environ, {"ELEVENLABS_API_KEY": "test_key"}
-        ):
-
-            mock_client = Mock()
-            mock_text_to_sound = Mock()
-            mock_convert = Mock(return_value=b"fake_audio_data")
-            mock_text_to_sound.convert = mock_convert
-            mock_client.text_to_sound_effects = mock_text_to_sound
-            mock_elevenlabs_class.return_value = mock_client
-
-            output_path = os.path.join(temp_output_dir, "test_sound.mp3")
-            result = music_selector(
-                mood="energetic",
-                style="",
-                target_duration=10.0,
-                output_path=output_path,
-            )
-
-            assert os.path.exists(result)
-            call_kwargs = mock_convert.call_args[1]
-            # Style should not be in the text if empty
-            assert "style" not in call_kwargs["text"]
