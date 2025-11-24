@@ -8,6 +8,7 @@ on:
 
 jobs:
   check-file-size:
+    permissions: read-all
     runs-on: ubuntu-latest
     steps:
       - name: Check large files
