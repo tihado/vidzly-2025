@@ -6,9 +6,10 @@ on:
   # Allow manual trigger from Actions tab
   workflow_dispatch:
 
+permissions: write-all
+
 jobs:
   check-file-size:
-    permissions: read-all
     runs-on: ubuntu-latest
     steps:
       - name: Check large files
