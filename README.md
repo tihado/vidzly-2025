@@ -8,15 +8,15 @@
 
 ## ✨ What is Vidzly?
 
-Vidzly is an intelligent automation platform that revolutionizes short-form video creation. Whether you're a micro-influencer, content creator, or business owner, Vidzly transforms your raw clips into polished, engaging 30-second videos that stop the scroll.
+Vidzly is an intelligent automation platform that revolutionizes short-form video creation. Whether you're a micro-influencer, content creator, or business owner, Vidzly transforms your raw clips into polished, engaging videos that stop the scroll.
 
 ### 🚀 Why Vidzly?
 
-- **Zero Learning Curve**: No video editing skills? No problem. Just upload and describe your vibe.
-- **AI-Powered Magic**: Advanced AI handles cutting, transitions, music sync, and visual effects automatically.
+- **Zero Learning Curve**: No video editing skills? No problem. Use our intuitive web interface.
+- **AI-Powered Magic**: Advanced AI handles video analysis, cutting, transitions, music generation, and thumbnail creation automatically.
 - **Lightning Fast**: What takes hours in traditional editing software takes minutes with Vidzly.
 - **Professional Quality**: Get studio-quality results without the studio price tag.
-- **Your Style, Your Way**: Customize the mood, pace, and aesthetic to match your brand.
+- **MCP Tools Integration**: All tools are available as MCP (Model Context Protocol) tools for AI agent integration.
 
 ### 🎯 Perfect For
 
@@ -28,24 +28,30 @@ Vidzly is an intelligent automation platform that revolutionizes short-form vide
 
 ## 🎬 How It Works
 
-1. **Upload Your Raw Footage** - Drop your clips, no matter how rough
-2. **Describe Your Vision** - Tell us your vibe, mood, or style preferences
-3. **AI Works Its Magic** - Our intelligent system edits, enhances, and polishes
-4. **Download & Share** - Get your scroll-stopping 30-second masterpiece
+1. **Upload Your Raw Footage** - Drop your clips through the Gradio web interface
+2. **Use AI-Powered Tools** - Leverage our suite of MCP tools for video analysis, editing, and enhancement
+3. **AI Works Its Magic** - Our intelligent system analyzes, edits, and polishes your content
+4. **Download & Share** - Get your scroll-stopping masterpiece
 
-## 🛠️ Features
+## 🛠️ Available Tools
 
-- 🎞️ **Smart Auto-Editing**: Intelligent scene detection and cutting
-- 🎵 **Music Synchronization**: Perfect beat-matching and audio enhancement
-- 🎨 **Style Transfer**: Apply filters and effects that match your brand
-- ⚡ **Real-Time Preview**: See your video come together as it's being created
-- 📊 **Analytics Ready**: Optimized for maximum engagement
+Vidzly provides a comprehensive suite of MCP tools accessible through a Gradio web interface:
 
-## 📅 Release Date
+- 🎥 **Video Summarizer**: Uses Google Gemini AI to analyze video content and generate detailed summaries including key scenes, detected objects, mood tags, and recommended thumbnail timestamps
+- ✂️ **Video Clipper**: Extract specific segments from videos by specifying start and end times
+- 🖼️ **Frame Extractor**: Extract representative frames from videos, with AI-powered selection or manual timestamp specification
+- 🎨 **Thumbnail Generator**: Automatically generate engaging thumbnails with AI-generated text and stickers based on video frames and summaries
+- 🎬 **Video Composer**: Combine multiple video clips with transitions (fade, crossfade, cut) and optional background music according to a JSON script
+- 🎵 **Music Selector**: Generate background music and sound effects using ElevenLabs API based on mood, style, duration, BPM, and other parameters
 
-**Coming Soon: November 30, 2025**
+## 🏗️ Architecture
 
-Join us on this journey to democratize video creation and empower creators everywhere!
+- **Web Interface**: Built with Gradio (with MCP server support)
+- **AI Integration**: Google Gemini for video understanding and analysis
+- **Audio Generation**: ElevenLabs API for music and sound effect generation
+- **Video Processing**: MoviePy for video editing and composition
+- **Image Processing**: OpenCV and Pillow for frame extraction and thumbnail generation
+- **Testing**: Comprehensive pytest test suite with unit and integration tests
 
 ## Setup
 
@@ -119,6 +125,33 @@ To update all dependencies to their latest compatible versions:
 poetry update
 ```
 
+### Code Formatting with Black and Lefthook
+
+This project uses [Black](https://black.readthedocs.io/) for code formatting and [Lefthook](https://github.com/evilmartians/lefthook) for git hooks to automatically format code before commits.
+
+After installing dependencies, set up lefthook:
+
+```bash
+poetry run lefthook install
+```
+
+This will install git hooks that will:
+
+- **Before commit**: Automatically format staged Python files with Black
+- **Before push**: Check that all Python files in `src/` and `tests/` are properly formatted
+
+To manually format code:
+
+```bash
+poetry run black src/ tests/
+```
+
+To check formatting without making changes:
+
+```bash
+poetry run black --check src/ tests/
+```
+
 ### Setting Up Environment Variables
 
 Create a `.env` file in the root directory and add your environment variables.
@@ -130,17 +163,64 @@ ELEVENLABS_API_KEY=your_elevenlabs_api_key
 
 ### Running the Application
 
+Start the Gradio web interface:
+
 ```bash
 poetry run python src/app/app.py
 ```
 
-## Adding a New MCP Tool
+This will launch a web interface with:
 
-For detailed instructions on how to add a new MCP tool to the application, see [ADDING_MCP_TOOLS.md](ADDING_MCP_TOOLS.md).
+- **Vidzly Tab**: Project introduction and overview
+- **MCP Tools Tab**: Access to all 6 video processing tools
+
+The application runs with MCP server support, allowing AI agents to interact with the tools programmatically.
+
+## Testing
+
+This project includes comprehensive unit and integration tests. See [tests/README.md](tests/README.md) for detailed testing documentation.
+
+### Running Tests
+
+Run all tests:
+
+```bash
+poetry run pytest
+```
+
+Run with coverage:
+
+```bash
+poetry run pytest --cov=src/app/tools --cov-report=html
+```
+
+Run specific test file:
+
+```bash
+poetry run pytest tests/test_video_summarizer.py
+```
+
+### Test Structure
+
+- **Unit Tests**: Mocked tests for input validation, error handling, and logic
+- **Integration Tests**: Real video file tests for actual functionality
+- All tools have corresponding test files in the `tests/` directory
+
+## Technology Stack
+
+- **Python 3.12+**: Core language
+- **Gradio 6.0+**: Web interface with MCP support
+- **Google Gemini API**: Video understanding and analysis
+- **ElevenLabs API**: Music and sound effect generation
+- **MoviePy 2.2.1**: Video editing and composition
+- **OpenCV 4.12+**: Video processing and frame extraction
+- **Pillow 11**: Image processing for thumbnails
+- **Poetry**: Dependency management
+- **pytest**: Testing framework
 
 ### Contributors
 
-- 🐱 [honghanhh](https://github.com/honghanhh)🐱
-- 🦊 [nvti](https://github.com/nvti)🦊
-- 🐻 [Nlag](https://github.com/NLag)🐻
-- 🐰 [DaphneeCh](https://github.com/DaphneeCh)🐰
+- 🐱 [honghanhh](https://github.com/honghanhh) 🐱
+- 🦊 [nvti](https://github.com/nvti) 🦊
+- 🐻 [Nlag](https://github.com/NLag) 🐻
+- 🐰 [DaphneeCh](https://github.com/DaphneeCh) 🐰

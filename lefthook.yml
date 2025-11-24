@@ -1,0 +1,14 @@
+pre-commit:
+  parallel: true
+  commands:
+    black:
+      run: poetry run black {staged_files}
+      glob: "*.py"
+      stage_fixed: true
+
+pre-push:
+  parallel: true
+  commands:
+    black-check:
+      run: poetry run black --check src/ tests/
+      glob: "*.py"

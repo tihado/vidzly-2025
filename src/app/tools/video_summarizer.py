@@ -140,7 +140,7 @@ Format your response as a structured, detailed summary that captures the essence
                     thumbnail_timeframe = 0
             except ValueError:
                 thumbnail_timeframe = None
-        
+
         # Fallback: use middle of video if extraction failed
         if thumbnail_timeframe is None:
             thumbnail_timeframe = round(duration / 2, 2) if duration > 0 else 0
