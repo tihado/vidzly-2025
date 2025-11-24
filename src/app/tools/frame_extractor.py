@@ -14,7 +14,7 @@ def frame_extractor(
 ) -> str:
     """
     Extract a representative frame from video.
-    
+
     If thumbnail_timeframe is provided, uses that timestamp directly. Otherwise,
     uses Gemini AI to analyze the video and determine the best timestamp for
     frame extraction.
@@ -113,10 +113,10 @@ Respond with ONLY the timestamp in seconds as a number (e.g., "12.5" or "8.3"). 
 
             # Extract timestamp from response
             response_text = response.text.strip()
-            
+
             # Try to extract numeric timestamp from response
             # Look for patterns like "12.5", "8.3", "15", etc.
-            timestamp_match = re.search(r'(\d+\.?\d*)', response_text)
+            timestamp_match = re.search(r"(\d+\.?\d*)", response_text)
             if timestamp_match:
                 best_timestamp = float(timestamp_match.group(1))
                 # Ensure timestamp is within video duration
@@ -150,4 +150,3 @@ Respond with ONLY the timestamp in seconds as a number (e.g., "12.5" or "8.3"). 
 
     except Exception as e:
         raise Exception(f"Error extracting frame: {str(e)}")
-

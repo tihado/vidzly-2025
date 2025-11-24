@@ -123,45 +123,47 @@ Generate the complete thumbnail image with all these elements integrated."""
 
         # Extract the generated image from the response
         generated_image = None
-        
+
         # Check if response has image data
-        if hasattr(response, 'candidates') and response.candidates:
+        if hasattr(response, "candidates") and response.candidates:
             for candidate in response.candidates:
-                if hasattr(candidate, 'content') and candidate.content:
-                    if hasattr(candidate.content, 'parts'):
+                if hasattr(candidate, "content") and candidate.content:
+                    if hasattr(candidate.content, "parts"):
                         for part in candidate.content.parts:
                             # Check for inline_data (image data)
-                            if hasattr(part, 'inline_data') and part.inline_data:
+                            if hasattr(part, "inline_data") and part.inline_data:
                                 generated_image = part.inline_data.data
                                 break
                             # Check for blob (alternative format)
-                            elif hasattr(part, 'blob') and part.blob:
+                            elif hasattr(part, "blob") and part.blob:
                                 generated_image = part.blob.data
                                 break
-        
+
         # If no image found in candidates, try alternative response structure
         if generated_image is None:
             # Try to get image from response directly
-            if hasattr(response, 'parts'):
+            if hasattr(response, "parts"):
                 for part in response.parts:
-                    if hasattr(part, 'inline_data') and part.inline_data:
+                    if hasattr(part, "inline_data") and part.inline_data:
                         generated_image = part.inline_data.data
                         break
-                    elif hasattr(part, 'blob') and part.blob:
+                    elif hasattr(part, "blob") and part.blob:
                         generated_image = part.blob.data
                         break
-        
+
         # If still no image, the model might have returned text describing the image
         # In that case, we'll need to handle it differently or raise an error
         if generated_image is None:
             # Check if response has text (might indicate the model didn't generate an image)
-            if hasattr(response, 'text') and response.text:
+            if hasattr(response, "text") and response.text:
                 raise Exception(
                     f"Gemini returned text instead of image. This model may not support image generation. "
                     f"Response: {response.text[:200]}"
                 )
             else:
-                raise Exception("Failed to extract generated image from Gemini response")
+                raise Exception(
+                    "Failed to extract generated image from Gemini response"
+                )
 
         # Convert image data to PIL Image
         thumbnail = Image.open(BytesIO(generated_image)).convert("RGB")
@@ -170,9 +172,7 @@ Generate the complete thumbnail image with all these elements integrated."""
         if output_path is None:
             temp_dir = tempfile.gettempdir()
             timestamp = int(time.time())
-            output_path = os.path.join(
-                temp_dir, f"thumbnail_{timestamp}.png"
-            )
+            output_path = os.path.join(temp_dir, f"thumbnail_{timestamp}.png")
 
         # Ensure output directory exists
         output_dir = os.path.dirname(output_path)

@@ -1,0 +1,23 @@
+name: Check file size
+on:
+  pull_request:
+    branches: [main]
+
+  # Allow manual trigger from Actions tab
+  workflow_dispatch:
+
+permissions: write-all
+
+jobs:
+  check-file-size:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Check large files
+        uses: ppremk/lfs-warning@v3.3
+        with:
+          filesizelimit: 10485760 # 10MB limit for HF Spaces sync
