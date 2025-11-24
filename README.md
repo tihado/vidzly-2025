@@ -125,6 +125,33 @@ To update all dependencies to their latest compatible versions:
 poetry update
 ```
 
+### Code Formatting with Black and Lefthook
+
+This project uses [Black](https://black.readthedocs.io/) for code formatting and [Lefthook](https://github.com/evilmartians/lefthook) for git hooks to automatically format code before commits.
+
+After installing dependencies, set up lefthook:
+
+```bash
+poetry run lefthook install
+```
+
+This will install git hooks that will:
+
+- **Before commit**: Automatically format staged Python files with Black
+- **Before push**: Check that all Python files in `src/` and `tests/` are properly formatted
+
+To manually format code:
+
+```bash
+poetry run black src/ tests/
+```
+
+To check formatting without making changes:
+
+```bash
+poetry run black --check src/ tests/
+```
+
 ### Setting Up Environment Variables
 
 Create a `.env` file in the root directory and add your environment variables.
@@ -143,6 +170,7 @@ poetry run python src/app/app.py
 ```
 
 This will launch a web interface with:
+
 - **Vidzly Tab**: Project introduction and overview
 - **MCP Tools Tab**: Access to all 6 video processing tools
 
@@ -155,16 +183,19 @@ This project includes comprehensive unit and integration tests. See [tests/READM
 ### Running Tests
 
 Run all tests:
+
 ```bash
 poetry run pytest
 ```
 
 Run with coverage:
+
 ```bash
 poetry run pytest --cov=src/app/tools --cov-report=html
 ```
 
 Run specific test file:
+
 ```bash
 poetry run pytest tests/test_video_summarizer.py
 ```
@@ -174,7 +205,6 @@ poetry run pytest tests/test_video_summarizer.py
 - **Unit Tests**: Mocked tests for input validation, error handling, and logic
 - **Integration Tests**: Real video file tests for actual functionality
 - All tools have corresponding test files in the `tests/` directory
-
 
 ## Technology Stack
 

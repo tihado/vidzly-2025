@@ -1,6 +1,7 @@
 """
 Unit tests for video_summarizer tool.
 """
+
 import os
 import json
 import pytest
@@ -18,9 +19,11 @@ class TestVideoSummarizer:
 
     def test_video_summarizer_with_tuple_input(self, temp_video_file):
         """Test video_summarizer with tuple input (Gradio format)."""
-        with patch("app.tools.video_summarizer.cv2.VideoCapture") as mock_capture, \
-             patch("app.tools.video_summarizer.genai.Client") as mock_client:
-            
+        with (
+            patch("app.tools.video_summarizer.cv2.VideoCapture") as mock_capture,
+            patch("app.tools.video_summarizer.genai.Client") as mock_client,
+        ):
+
             mock_cap = Mock()
             mock_cap.isOpened.return_value = True
             mock_cap.get.side_effect = lambda prop: {
@@ -97,9 +100,11 @@ class TestVideoSummarizer:
 
     def test_video_summarizer_extracts_mood_tags(self, temp_video_file):
         """Test video_summarizer extracts mood tags from summary."""
-        with patch("app.tools.video_summarizer.cv2.VideoCapture") as mock_capture, \
-             patch("app.tools.video_summarizer.genai.Client") as mock_client:
-            
+        with (
+            patch("app.tools.video_summarizer.cv2.VideoCapture") as mock_capture,
+            patch("app.tools.video_summarizer.genai.Client") as mock_client,
+        ):
+
             mock_cap = Mock()
             mock_cap.isOpened.return_value = True
             mock_cap.get.side_effect = lambda prop: {
@@ -129,9 +134,11 @@ class TestVideoSummarizer:
 
     def test_video_summarizer_default_mood_tags(self, temp_video_file):
         """Test video_summarizer uses default mood tag when none detected."""
-        with patch("app.tools.video_summarizer.cv2.VideoCapture") as mock_capture, \
-             patch("app.tools.video_summarizer.genai.Client") as mock_client:
-            
+        with (
+            patch("app.tools.video_summarizer.cv2.VideoCapture") as mock_capture,
+            patch("app.tools.video_summarizer.genai.Client") as mock_client,
+        ):
+
             mock_cap = Mock()
             mock_cap.isOpened.return_value = True
             mock_cap.get.side_effect = lambda prop: {
@@ -145,7 +152,9 @@ class TestVideoSummarizer:
             mock_genai_client = Mock()
             mock_response = Mock()
             # Summary without mood keywords
-            mock_response.text = "This is a regular video without specific mood indicators."
+            mock_response.text = (
+                "This is a regular video without specific mood indicators."
+            )
             mock_genai_client.models.generate_content.return_value = mock_response
             mock_client.return_value = mock_genai_client
 
@@ -159,9 +168,11 @@ class TestVideoSummarizer:
 
     def test_video_summarizer_custom_fps(self, temp_video_file):
         """Test video_summarizer with custom fps parameter."""
-        with patch("app.tools.video_summarizer.cv2.VideoCapture") as mock_capture, \
-             patch("app.tools.video_summarizer.genai.Client") as mock_client:
-            
+        with (
+            patch("app.tools.video_summarizer.cv2.VideoCapture") as mock_capture,
+            patch("app.tools.video_summarizer.genai.Client") as mock_client,
+        ):
+
             mock_cap = Mock()
             mock_cap.isOpened.return_value = True
             mock_cap.get.side_effect = lambda prop: {
@@ -203,16 +214,18 @@ class TestVideoSummarizer:
 
     def test_video_summarizer_metadata_extraction(self, temp_video_file):
         """Test video_summarizer extracts correct metadata."""
-        with patch("app.tools.video_summarizer.cv2.VideoCapture") as mock_capture, \
-             patch("app.tools.video_summarizer.genai.Client") as mock_client:
-            
+        with (
+            patch("app.tools.video_summarizer.cv2.VideoCapture") as mock_capture,
+            patch("app.tools.video_summarizer.genai.Client") as mock_client,
+        ):
+
             mock_cap = Mock()
             mock_cap.isOpened.return_value = True
             mock_cap.get.side_effect = lambda prop: {
-                5: 24.0,   # FPS
-                7: 720,    # Frame count
-                3: 1280,   # Width
-                4: 720,    # Height
+                5: 24.0,  # FPS
+                7: 720,  # Frame count
+                3: 1280,  # Width
+                4: 720,  # Height
             }.get(prop, 0)
             mock_capture.return_value = mock_cap
 
@@ -230,7 +243,9 @@ class TestVideoSummarizer:
             assert result_json["fps"] == 24.0
             assert result_json["frame_count"] == 720
             assert result_json["resolution"] == "1280x720"
-            assert result_json["duration"] == pytest.approx(30.0, rel=0.1)  # 720/24 = 30
+            assert result_json["duration"] == pytest.approx(
+                30.0, rel=0.1
+            )  # 720/24 = 30
 
 
 class TestVideoSummarizerIntegration:
@@ -265,7 +280,7 @@ class TestVideoSummarizerIntegration:
 
     @pytest.mark.skipif(
         not os.getenv("GOOGLE_API_KEY"),
-        reason="GOOGLE_API_KEY not set, skipping API test"
+        reason="GOOGLE_API_KEY not set, skipping API test",
     )
     def test_video_summarizer_real_video_with_api(self, real_video_file):
         """Test video_summarizer with real video file and API key (if available)."""
@@ -278,4 +293,3 @@ class TestVideoSummarizerIntegration:
             assert len(result_json["summary"]) > 0
             assert "mood_tags" in result_json
             assert isinstance(result_json["mood_tags"], list)
-
