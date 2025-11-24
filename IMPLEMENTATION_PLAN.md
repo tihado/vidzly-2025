@@ -2,16 +2,35 @@
 
 ## System Architecture Overview
 
-The Vidzly system will process user-uploaded videos and descriptions to create polished 30-second short videos through the following workflow:
+The Vidzly system uses a **two-agent architecture** powered by Google ADK (Agent Development Kit) to process user-uploaded videos and descriptions, creating polished short videos through an intelligent workflow:
 
-1. **Input**: Multiple video files + user description
-2. **Analysis**: Understand video content and user requirements
-3. **Script Generation**: Create detailed script/storyboard for the final video
-4. **Selection**: Choose relevant scenes and music based on script
-5. **Processing**: Clip, edit, and combine videos according to script
-6. **Composition**: Create final 30-second video with music
-7. **Thumbnail Generation**: Extract frame and create engaging thumbnail with text/stickers
-8. **Output**: Final 30-second video + thumbnail image
+### Agent Architecture
+
+1. **Script Writer/Director Agent**:
+
+   - Analyzes video content using `video_summarizer`
+   - Generates detailed composition scripts using `video_script_generator`
+   - Creates background music using `music_selector` (if enabled)
+   - Outputs: Script JSON, video summaries, and music file
+
+2. **Video Editor Agent**:
+   - Extracts representative frames using `frame_extractor`
+   - Generates engaging thumbnails using `thumbnail_generator`
+   - Composes final video using `video_composer` with script, music, and thumbnail overlay
+   - Outputs: Final composed video and thumbnail image
+
+### Workflow Overview
+
+1. **Input**: Multiple video files + optional user description
+2. **Phase 1 - Planning (Script Writer Agent)**:
+   - Video analysis and understanding
+   - Script generation with scene sequences, timings, and transitions
+   - Music generation based on mood and style
+3. **Phase 2 - Execution (Video Editor Agent)**:
+   - Frame extraction for thumbnail
+   - Thumbnail generation with AI-generated text and stickers
+   - Video composition with transitions, music, and thumbnail overlay
+4. **Output**: Final video with thumbnail overlay on first frame + standalone thumbnail image
 
 ## Required MCP Tools
 
@@ -113,6 +132,7 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
   - `script`: JSON script with scene information (required)
   - `video_clips`: List of source video file paths (required)
   - `music_path`: Background music file path (optional)
+  - `thumbnail_image`: Thumbnail image file path (optional) - will be overlaid on the first frame
   - `output_path`: Output file path (optional)
 - **Script Format**:
   - Each scene's `source_video` references a video from `video_clips` by:
@@ -121,8 +141,8 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
   - The same video can be used in multiple scenes with different time ranges
   - Each scene specifies `start_time`, `end_time`, and transition types
 - **Output**: Final composed video file path
-- **Technology**: MoviePy for video composition, transitions, audio mixing
-- **Returns**: Path to final 30-second video
+- **Technology**: MoviePy for video composition, transitions, audio mixing, and image overlay
+- **Returns**: Path to final 30-second video with thumbnail overlay on first frame (if provided)
 
 #### 5.3 Frame Extractor (`frame_extractor.py`)
 
@@ -140,11 +160,11 @@ The Vidzly system will process user-uploaded videos and descriptions to create p
 #### 5.4 Thumbnail Generation (`thumbnail_generation.py`)
 
 - **Purpose**: Automatically generate engaging thumbnails with AI-generated text and stickers
-- **Input**: 
+- **Input**:
   - Frame image path (from frame_extractor)
   - Video script JSON (from video_script_generator) containing scenes, mood, pacing, narrative structure
 - **Output**: Final thumbnail image file path with text overlays and stickers
-- **Technology**: 
+- **Technology**:
   - Google Gemini Vision API for generate image with text content and sticker suggestions based on script context
 - **Returns**: Path to final thumbnail with AI-generated text and stickers
 - **Features**:
@@ -272,6 +292,7 @@ src/app/
    - Cleanup: Delete after processing completes or on session timeout
 
 3. **Final Output Storage**
+
    - Store final videos in: `src/app/outputs/` or `temp/{session_id}/final/`
    - Store thumbnails in: `temp/{session_id}/thumbnails/` or alongside final videos
    - Return file paths to Gradio `gr.Video` and `gr.Image` components for display/download
@@ -317,13 +338,22 @@ The `file_manager.py` utility should:
 
 ## Technical Stack
 
+### Agent Framework
+
+- **Google ADK (Agent Development Kit)**: Required for the two-agent architecture
+  - `google-adk` package must be installed
+  - Uses `LlmAgent` and `Tool` classes from `google.adk.agents` and `google.adk.tools`
+  - Agents use Gemini 2.5 Flash Lite model for reasoning and tool execution
+  - ADK is always required (no fallback mode)
+
 ### Dependencies to Add
 
 - `opencv-python` - Video frame extraction and basic processing
-- `moviepy` - Video editing, clipping, composition
+- `moviepy` - Video editing, clipping, composition, and image overlay
 - `ffmpeg-python` - Alternative/additional video processing
 - `numpy` - Array operations for video processing
 - `pillow` - Image processing for frame analysis
+- `google-adk` - Google Agent Development Kit for agent architecture
 
 ### Existing Dependencies
 
@@ -345,18 +375,30 @@ The "Vidzly" tab in app.py will include:
 
 ## Workflow Sequence
 
+The workflow uses a two-agent architecture powered by Google ADK:
+
+### Phase 1: Script Writer/Director Agent
+
 1. User uploads multiple videos
-2. User provides description
-3. System analyzes all videos (parallel processing)
-4. System parses user description
-5. System matches scenes to requirements
-6. **System generates detailed script for 30-second video**
-7. System clips selected scenes based on script
-8. System selects appropriate music based on script
-9. System composes final video according to script
-10. System extracts thumbnail frame from final video (using frame_extractor)
-11. System generates final thumbnail with AI-generated text and stickers (using thumbnail_generation with script and frame)
-12. System returns final video, thumbnail, and script
+2. User provides description (optional)
+3. **Script Writer Agent** analyzes all videos using `video_summarizer`
+4. **Script Writer Agent** generates detailed composition script using `video_script_generator`
+5. **Script Writer Agent** generates appropriate background music using `music_selector` (if enabled)
+6. Output: Script JSON, video summaries JSON, and music file path
+
+### Phase 2: Video Editor Agent
+
+7. **Video Editor Agent** extracts a representative frame using `frame_extractor`
+8. **Video Editor Agent** generates engaging thumbnail using `thumbnail_generator`
+9. **Video Editor Agent** composes final video using `video_composer` with:
+   - The generated script
+   - Background music (if generated)
+   - Thumbnail image (overlaid on the first frame)
+10. Output: Final composed video and thumbnail image
+
+### Final Output
+
+11. System returns final video, thumbnail, script, and summaries
 
 ## Script Format Example
 
@@ -402,16 +444,19 @@ The "Vidzly" tab in app.py will include:
 The thumbnail extractor will support multiple extraction strategies:
 
 1. **Default (Middle Frame)**: Extract frame at 15 seconds (middle of 30s video)
+
    - Simple and fast
    - Ensures representative frame from video
 
 2. **Best Frame Selection**: Analyze multiple frames and select best based on:
+
    - Visual sharpness (Laplacian variance)
    - Contrast and brightness levels
    - Composition quality (rule of thirds, subject positioning)
    - Motion blur detection (prefer less blur)
 
 3. **AI-Selected Frame**: Use Gemini Vision API to:
+
    - Analyze key frames at intervals (e.g., every 2-3 seconds)
    - Select most engaging/representative frame
    - Consider visual appeal, subject clarity, and composition
@@ -423,6 +468,7 @@ The thumbnail extractor will support multiple extraction strategies:
 The thumbnail generation tool uses Gemini AI to automatically create engaging thumbnails:
 
 1. **AI-Generated Text Overlays**:
+
    - Gemini analyzes the frame image and video script to generate:
      - Catchy title text (3-7 words) that captures video essence
      - Supporting subtitle text (optional, 5-10 words)
@@ -432,6 +478,7 @@ The thumbnail generation tool uses Gemini AI to automatically create engaging th
    - Auto-sizing based on thumbnail dimensions
 
 2. **AI-Recommended Stickers**:
+
    - Gemini suggests appropriate stickers based on:
      - Video mood and pacing from script
      - Frame composition and visual elements
@@ -445,6 +492,7 @@ The thumbnail generation tool uses Gemini AI to automatically create engaging th
    - Transparency and blending support
 
 3. **Context-Aware Design**:
+
    - Uses video script data (mood, pacing, narrative structure) to inform design
    - Analyzes frame composition to determine optimal text/sticker placement
    - Matches color scheme to video aesthetic
@@ -523,11 +571,14 @@ The thumbnail generation tool uses Gemini AI to automatically create engaging th
    - Implement thumbnail_generation.py (uses frame_extractor output)
    - Create sticker library/assets directory
 
-6. **Phase 6: Integration**
+6. **Phase 6: Integration & Agent Architecture**
 
-   - Implement video_workflow.py
+   - Implement two-agent workflow using Google ADK:
+     - Script Writer/Director Agent (planning and script generation)
+     - Video Editor Agent (execution and composition)
    - Create main Vidzly UI in app.py
    - Integrate all MCP tools
+   - Add thumbnail overlay support to video_composer
    - Add error handling
 
 7. **Phase 7: Polish**

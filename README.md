@@ -29,9 +29,11 @@ Vidzly is an intelligent automation platform that revolutionizes short-form vide
 ## 🎬 How It Works
 
 1. **Upload Your Raw Footage** - Drop your clips through the Gradio web interface
-2. **Use AI-Powered Tools** - Leverage our suite of MCP tools for video analysis, editing, and enhancement
-3. **AI Works Its Magic** - Our intelligent system analyzes, edits, and polishes your content
-4. **Download & Share** - Get your scroll-stopping masterpiece
+2. **Describe Your Vision** - Optionally provide a description of the mood, style, or vibe you want
+3. **AI Agents Work Their Magic** - Our two-agent system intelligently plans and executes:
+   - **Script Writer/Director Agent**: Analyzes videos, creates composition scripts, and generates music
+   - **Video Editor Agent**: Executes video composition, extracts frames, and generates thumbnails
+4. **Get Your Masterpiece** - Receive a polished video with thumbnail overlay on the first frame
 
 ## 🛠️ Available Tools
 
@@ -41,13 +43,16 @@ Vidzly provides a comprehensive suite of MCP tools accessible through a Gradio w
 - ✂️ **Video Clipper**: Extract specific segments from videos by specifying start and end times
 - 🖼️ **Frame Extractor**: Extract representative frames from videos, with AI-powered selection or manual timestamp specification
 - 🎨 **Thumbnail Generator**: Automatically generate engaging thumbnails with AI-generated text and stickers based on video frames and summaries
-- 🎬 **Video Composer**: Combine multiple video clips with transitions (fade, crossfade, cut) and optional background music according to a JSON script
+- 🎬 **Video Composer**: Combine multiple video clips with transitions (fade, crossfade, cut) and optional background music according to a JSON script. Supports optional thumbnail image overlay on the first frame
 - 🎵 **Music Selector**: Generate background music and sound effects using ElevenLabs API based on mood, style, duration, BPM, and other parameters
 
 ## 🏗️ Architecture
 
 - **Web Interface**: Built with Gradio (with MCP server support)
-- **AI Integration**: Google Gemini for video understanding and analysis
+- **AI Agents**: Google ADK (Agent Development Kit) with two specialized agents:
+  - **Script Writer/Director Agent**: Plans video composition using video analysis and script generation
+  - **Video Editor Agent**: Executes video composition, frame extraction, and thumbnail generation
+- **AI Integration**: Google Gemini for video understanding, analysis, and script generation
 - **Audio Generation**: ElevenLabs API for music and sound effect generation
 - **Video Processing**: MoviePy for video editing and composition
 - **Image Processing**: OpenCV and Pillow for frame extraction and thumbnail generation
@@ -161,6 +166,8 @@ GOOGLE_API_KEY=your_google_api_key
 ELEVENLABS_API_KEY=your_elevenlabs_api_key
 ```
 
+**Note**: The application requires Google ADK (Agent Development Kit) to be installed. The `google-adk` package is required for the two-agent workflow architecture.
+
 ### Running the Application
 
 Start the Gradio web interface:
@@ -210,9 +217,10 @@ poetry run pytest tests/test_video_summarizer.py
 
 - **Python 3.12+**: Core language
 - **Gradio 6.0+**: Web interface with MCP support
-- **Google Gemini API**: Video understanding and analysis
+- **Google ADK (Agent Development Kit)**: Two-agent architecture for intelligent workflow orchestration
+- **Google Gemini API**: Video understanding, analysis, script generation, and thumbnail creation
 - **ElevenLabs API**: Music and sound effect generation
-- **MoviePy 2.2.1**: Video editing and composition
+- **MoviePy 2.2.1**: Video editing, composition, and image overlay
 - **OpenCV 4.12+**: Video processing and frame extraction
 - **Pillow 11**: Image processing for thumbnails
 - **Poetry**: Dependency management

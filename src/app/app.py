@@ -12,8 +12,8 @@ from tools.frame_extractor import frame_extractor
 from tools.thumbnail_generator import thumbnail_generator
 from tools.video_composer import video_composer
 from tools.music_selector import music_selector
-from workflow_ui import create_workflow_ui
-from workflow_agent import agent_workflow
+from tools.video_script_generator import video_script_generator
+from workflow_ui import workflow_ui
 
 
 def frame_extractor_wrapper(video_input, thumbnail_timeframe=None):
@@ -35,7 +35,7 @@ with gr.Blocks() as demo:
 
         # Full workflow UI
         gr.Markdown("---")
-        create_workflow_ui()
+        workflow_ui()
 
     with gr.Tab("MCP Tools"):
         with gr.Tab("Video Summarizer"):
@@ -140,10 +140,15 @@ with gr.Blocks() as demo:
                         file_count="single",
                         file_types=["audio"],
                     ),
+                    gr.Image(
+                        label="Thumbnail Image (Optional)",
+                        type="filepath",
+                        info="Optional thumbnail image that will be overlaid on the first frame of the video. You can use the Thumbnail Generation tool to create one.",
+                    ),
                 ],
                 outputs=[gr.Video(label="Composed Video")],
                 title="Video Composer",
-                description="Combine video clips, add music, and apply transitions according to a script. Upload source videos, then provide a JSON script where each scene's 'source_video' references a video by index (0-based) or filename. The same video can be used in multiple scenes with different time ranges.",
+                description="Combine video clips, add music, and apply transitions according to a script. Upload source videos, then provide a JSON script where each scene's 'source_video' references a video by index (0-based) or filename. The same video can be used in multiple scenes with different time ranges. Optionally add a thumbnail image that will be overlaid on the first frame.",
                 api_name="video_composer",
             )
 
@@ -198,40 +203,35 @@ with gr.Blocks() as demo:
                 api_name="music_selector",
             )
 
-        with gr.Tab("AI Agent Workflow"):
+        with gr.Tab("Video Script Generator"):
             gr.Interface(
-                fn=agent_workflow,
+                fn=video_script_generator,
                 inputs=[
-                    gr.File(
-                        label="Upload Video(s)",
-                        file_count="multiple",
-                        file_types=["video"],
+                    gr.Textbox(
+                        label="Video Summaries (JSON)",
+                        placeholder='[{"duration": 30.0, "summary": "...", "mood_tags": ["energetic"]}] or paste JSON string from Video Summarizer',
+                        lines=15,
+                        info="Enter video summaries as JSON. Can be a single JSON string, or a JSON array of summary objects. You can copy the JSON output from Video Summarizer tool.",
                     ),
                     gr.Textbox(
                         label="User Description (Optional)",
-                        placeholder="e.g., energetic and fast-paced, calm and cinematic...",
+                        placeholder="e.g., Create an energetic and fast-paced video with dynamic transitions...",
                         lines=3,
+                        info="Optional description of desired mood, style, or content for the final video",
                     ),
-                    gr.Slider(
+                    gr.Number(
                         value=30.0,
                         label="Target Duration (seconds)",
-                        minimum=5.0,
-                        maximum=60.0,
-                        step=1.0,
-                    ),
-                    gr.Checkbox(
-                        value=True,
-                        label="Generate Background Music",
+                        minimum=1.0,
+                        maximum=300.0,
+                        step=0.5,
+                        info="Target duration for the final video in seconds",
                     ),
                 ],
-                outputs=[
-                    gr.Video(label="Final Video"),
-                    gr.Textbox(label="Summary (JSON)", lines=10),
-                    gr.Textbox(label="Script (JSON)", lines=10),
-                ],
-                title="AI Agent Workflow",
-                description="Intelligent agent that orchestrates the full video creation workflow using MCP tools. The agent analyzes videos, generates scripts, creates music, and composes the final video automatically.",
-                api_name="agent_workflow",
+                outputs=[gr.Textbox(label="Generated Script (JSON)", lines=20)],
+                title="Video Script Generator",
+                description="Create a detailed script/storyboard for a video composition. Uses Google Gemini AI to intelligently generate a script based on video summaries and user requirements. The script includes scene sequences, timings, transitions, music configuration, pacing, and narrative structure. Requires GOOGLE_API_KEY in your .env file.",
+                api_name="video_script_generator",
             )
 
 

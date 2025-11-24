@@ -14,7 +14,7 @@ def run_workflow(videos, description, duration, music):
 
     try:
         # Run the agent-controlled workflow
-        final_path, summary_json, script_json = agent_workflow(
+        final_path, summary_json, script_json, thumbnail_path = agent_workflow(
             video_inputs=videos,
             user_description=description.strip() if description else None,
             target_duration=float(duration),
@@ -29,14 +29,14 @@ def run_workflow(videos, description, duration, music):
             else "✅ Video creation complete!"
         )
 
-        return final_path, status, summary_json, script_json
+        return final_path, status, summary_json, script_json, thumbnail_path
 
     except Exception as e:
         error_msg = f"❌ Error: {str(e)}\n\nDetails: {traceback.format_exc()}"
-        return None, error_msg, "", ""
+        return None, error_msg, "", "", None
 
 
-def create_workflow_ui():
+def workflow_ui():
     """Create the full workflow UI interface."""
     with gr.Column():
         # Header
@@ -107,6 +107,13 @@ def create_workflow_ui():
                     height=400,
                 )
 
+                thumbnail_image = gr.Image(
+                    label="Generated Thumbnail",
+                    type="filepath",
+                    height=300,
+                    visible=True,
+                )
+
                 with gr.Accordion("📋 Details", open=False):
                     summary_display = gr.Textbox(
                         label="Video Analysis Summary",
@@ -129,5 +136,11 @@ def create_workflow_ui():
                 target_duration,
                 generate_music,
             ],
-            outputs=[final_video, progress_status, summary_display, script_display],
+            outputs=[
+                final_video,
+                progress_status,
+                summary_display,
+                script_display,
+                thumbnail_image,
+            ],
         )

@@ -8,6 +8,7 @@ from moviepy import (
     CompositeVideoClip,
     AudioFileClip,
     concatenate_videoclips,
+    ImageClip,
 )
 
 try:
@@ -63,11 +64,17 @@ GradioMusicInput = Union[
     Tuple[str, ...],  # Gradio file format: (file_path, ...)
 ]
 
+GradioImageInput = Union[
+    str,  # File path
+    Tuple[str, ...],  # Gradio file format: (file_path, ...)
+]
+
 
 def video_composer(
     script: Union[str, ScriptData],
     video_clips: GradioVideoInput,
     music_path: Optional[GradioMusicInput] = None,
+    thumbnail_image: Optional[GradioImageInput] = None,
     output_path: Optional[str] = None,
 ) -> str:
     """
@@ -116,6 +123,8 @@ def video_composer(
                      Can be a list, single string (from Gradio File component).
         music_path: Optional path to background music file. If provided, will be added
                    to the final video. Can be a string path or tuple (from Gradio File component).
+        thumbnail_image: Optional path to thumbnail image file. If provided, will be overlaid
+                        on the first frame of the video. Can be a string path or tuple (from Gradio File component).
         output_path: Optional path where the composed video should be saved.
                     If not provided, saves to a temporary file.
 
@@ -161,6 +170,21 @@ def video_composer(
                 music_path = music_path[0] if music_path else None
             elif not isinstance(music_path, str):
                 music_path = None
+
+        # Handle Gradio thumbnail image input format
+        thumbnail_path = None
+        if thumbnail_image is not None:
+            if isinstance(thumbnail_image, tuple):
+                # Gradio file format: (file_path, ...)
+                thumbnail_path = thumbnail_image[0] if thumbnail_image else None
+            elif isinstance(thumbnail_image, str):
+                thumbnail_path = thumbnail_image
+            else:
+                thumbnail_path = None
+
+        # Validate thumbnail image exists if provided
+        if thumbnail_path and not os.path.exists(thumbnail_path):
+            raise FileNotFoundError(f"Thumbnail image not found: {thumbnail_path}")
 
         # Parse script if it's a string
         if isinstance(script, str):
@@ -318,6 +342,35 @@ def video_composer(
         else:
             # Use concatenate_videoclips for simple sequential composition
             final_video = concatenate_videoclips(processed_clips, method="compose")
+
+        # Add thumbnail image to first frame if provided
+        if thumbnail_path and os.path.exists(thumbnail_path):
+            try:
+                # Load the thumbnail image
+                thumbnail_clip = ImageClip(thumbnail_path)
+
+                # Get video dimensions
+                video_width = final_video.w
+                video_height = final_video.h
+
+                # Resize thumbnail to match video dimensions if needed
+                thumbnail_clip = thumbnail_clip.resize((video_width, video_height))
+
+                # Set duration to match one frame duration (very short)
+                # This ensures it only appears on the first frame
+                fps = final_video.fps if final_video.fps > 0 else 30.0
+                frame_duration = 1.0 / fps
+                thumbnail_clip = thumbnail_clip.set_duration(frame_duration)
+
+                # Position at the start (t=0) so it overlays the first frame
+                thumbnail_clip = thumbnail_clip.set_start(0)
+
+                # Composite the thumbnail over the video
+                # The thumbnail will appear on top of the first frame
+                final_video = CompositeVideoClip([final_video, thumbnail_clip])
+            except Exception as e:
+                # If thumbnail overlay fails, continue without thumbnail
+                print(f"Warning: Could not add thumbnail image: {str(e)}")
 
         # Add music if provided
         if music_path and os.path.exists(music_path):
