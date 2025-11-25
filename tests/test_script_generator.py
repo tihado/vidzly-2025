@@ -74,7 +74,9 @@ This is a narrative description of the script."""
             video_inputs = [temp_video_file, temp_video_file]
 
             with patch.dict(os.environ, {"GOOGLE_API_KEY": "test_key"}):
-                result = script_generator(video_inputs, user_prompt="Create an energetic video")
+                result = script_generator(
+                    video_inputs, user_prompt="Create an energetic video"
+                )
 
             result_json = json.loads(result)
             assert "videos_analyzed" in result_json

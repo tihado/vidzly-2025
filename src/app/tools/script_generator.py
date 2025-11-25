@@ -58,23 +58,27 @@ def script_generator(video_inputs, user_prompt: Optional[str] = None) -> str:
             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             cap.release()
 
-            videos_metadata.append({
-                "index": idx,
-                "filename": os.path.basename(video_path),
-                "duration": round(duration, 2),
-                "resolution": f"{width}x{height}",
-                "fps": round(video_fps, 2),
-                "frame_count": frame_count,
-            })
+            videos_metadata.append(
+                {
+                    "index": idx,
+                    "filename": os.path.basename(video_path),
+                    "duration": round(duration, 2),
+                    "resolution": f"{width}x{height}",
+                    "fps": round(video_fps, 2),
+                    "frame_count": frame_count,
+                }
+            )
 
         # Check for API key
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
-            return json.dumps({
-                "error": "GOOGLE_API_KEY environment variable not set",
-                "videos_analyzed": videos_metadata,
-                "script": "AI script generation requires GOOGLE_API_KEY",
-            })
+            return json.dumps(
+                {
+                    "error": "GOOGLE_API_KEY environment variable not set",
+                    "videos_analyzed": videos_metadata,
+                    "script": "AI script generation requires GOOGLE_API_KEY",
+                }
+            )
 
         # Initialize Gemini client
         client = genai.Client(api_key=api_key)
@@ -175,6 +179,7 @@ Also provide a human-readable narrative version of the script."""
         if "```json" in script_text:
             # Extract JSON code block
             import re
+
             json_pattern = r"```json\s*([\s\S]*?)\s*```"
             match = re.search(json_pattern, script_text)
             if match:
@@ -183,7 +188,9 @@ Also provide a human-readable narrative version of the script."""
         # Structure the response
         result = {
             "videos_analyzed": videos_metadata,
-            "user_prompt": user_prompt if user_prompt else "Auto-generated based on materials",
+            "user_prompt": (
+                user_prompt if user_prompt else "Auto-generated based on materials"
+            ),
             "script_narrative": script_text,
         }
 
@@ -193,7 +200,9 @@ Also provide a human-readable narrative version of the script."""
                 structured_script = json.loads(json_match)
                 result["structured_script"] = structured_script
             except json.JSONDecodeError:
-                result["structured_script_parse_error"] = "Could not parse JSON from response"
+                result["structured_script_parse_error"] = (
+                    "Could not parse JSON from response"
+                )
 
         return json.dumps(result, indent=2)
 

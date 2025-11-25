@@ -16,11 +16,16 @@ from tools.text_to_speech import text_to_speech_simple
 from tools.script_generator import script_generator
 from tools.subtitle_creator import subtitle_creator
 
-def text_to_speech_wrapper(text, voice, language, speed, format_type, generate_segments):
+
+def text_to_speech_wrapper(
+    text, voice, language, speed, format_type, generate_segments
+):
     """
     Wrapper to return audio file for Gradio.
     """
-    result = text_to_speech_simple(text, voice, language, speed, format_type, generate_segments)
+    result = text_to_speech_simple(
+        text, voice, language, speed, format_type, generate_segments
+    )
     # Always return audio file path (Gradio will render audio player)
     return result
 
@@ -32,7 +37,6 @@ def video_composer_wrapper(script, video_clips, music_path=None):
     video_path = video_composer(video_clips, music_path)
     # Return video path and the original script (for subtitle generator)
     return video_path
-
 
 
 def frame_extractor_wrapper(video_input, thumbnail_timeframe=None):
@@ -160,7 +164,9 @@ with gr.Blocks() as demo:
                 ],
                 outputs=[
                     gr.Video(label="Composed Video"),
-                    gr.Textbox(label="Script JSON (Copy this to Subtitle Generator)", lines=10)
+                    gr.Textbox(
+                        label="Script JSON (Copy this to Subtitle Generator)", lines=10
+                    ),
                 ],
                 title="Video Composer",
                 description="Combine video clips, add music, and apply transitions according to a script. Upload source videos, then provide a JSON script where each scene's 'source_video' references a video by index (0-based) or filename. The same video can be used in multiple scenes with different time ranges. The script JSON output can be copied directly to Subtitle Generator.",
@@ -269,14 +275,12 @@ with gr.Blocks() as demo:
                         info="Create separate audio files for each subtitle segment with timing info (for video synchronization). Only works with subtitle input formats.",
                     ),
                 ],
-                outputs=[
-                    gr.Audio(label="Generated Audio", type="filepath")
-                ],
+                outputs=[gr.Audio(label="Generated Audio", type="filepath")],
                 title="Text-to-Speech Converter",
                 description="Convert text or subtitles to audio using Google Text-to-Speech. Supports plain text, SRT, VTT, and JSON formats. Enable 'Generate Timed Segments' to create individual audio files for each subtitle with timing metadata (perfect for video synchronization with Video Composer output).",
                 api_name="text_to_speech",
             )
-            
+
         with gr.Tab("Script Generator"):
             gr.Interface(
                 fn=script_generator,

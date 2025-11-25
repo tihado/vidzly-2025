@@ -120,10 +120,18 @@ def subtitle_creator(
         # Set default styling values
         default_font = default_style.get("font", None) if default_style else None
         default_fontsize = default_style.get("fontsize", 48) if default_style else 48
-        default_color = default_style.get("color", "white") if default_style else "white"
-        default_bg_color = default_style.get("bg_color", "black") if default_style else "black"
-        default_position = default_style.get("position", "bottom") if default_style else "bottom"
-        default_transparent = default_style.get("transparent", True) if default_style else True
+        default_color = (
+            default_style.get("color", "white") if default_style else "white"
+        )
+        default_bg_color = (
+            default_style.get("bg_color", "black") if default_style else "black"
+        )
+        default_position = (
+            default_style.get("position", "bottom") if default_style else "bottom"
+        )
+        default_transparent = (
+            default_style.get("transparent", True) if default_style else True
+        )
 
         # Load the video
         video = VideoFileClip(video_path)
@@ -132,7 +140,11 @@ def subtitle_creator(
 
         # Validate all subtitle timings
         for idx, subtitle in enumerate(subtitles):
-            if "start" not in subtitle or "end" not in subtitle or "text" not in subtitle:
+            if (
+                "start" not in subtitle
+                or "end" not in subtitle
+                or "text" not in subtitle
+            ):
                 raise ValueError(
                     f"Subtitle {idx} must have 'start', 'end', and 'text' fields"
                 )
@@ -239,7 +251,9 @@ def subtitle_creator(
             output_path,
             codec="libx264",
             audio_codec="aac",
-            temp_audiofile=os.path.join(tempfile.gettempdir(), f"temp_audio_{os.urandom(8).hex()}.m4a"),
+            temp_audiofile=os.path.join(
+                tempfile.gettempdir(), f"temp_audio_{os.urandom(8).hex()}.m4a"
+            ),
             remove_temp=True,
             fps=video.fps,
         )

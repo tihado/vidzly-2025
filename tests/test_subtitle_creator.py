@@ -20,47 +20,45 @@ class TestSubtitleCreator:
     @pytest.fixture
     def simple_transcript(self):
         """Simple transcript JSON for testing."""
-        return json.dumps({
-            "subtitles": [
-                {
-                    "start": 0.0,
-                    "end": 2.5,
-                    "text": "Hello, welcome!",
-                    "position": "bottom",
+        return json.dumps(
+            {
+                "subtitles": [
+                    {
+                        "start": 0.0,
+                        "end": 2.5,
+                        "text": "Hello, welcome!",
+                        "position": "bottom",
+                        "fontsize": 48,
+                        "color": "white",
+                    },
+                    {
+                        "start": 2.5,
+                        "end": 5.0,
+                        "text": "This is a test.",
+                        "position": "top",
+                        "fontsize": 52,
+                        "color": "yellow",
+                    },
+                ],
+                "default_style": {
+                    "font": "Arial",
                     "fontsize": 48,
-                    "color": "white"
+                    "color": "white",
+                    "bg_color": "black",
                 },
-                {
-                    "start": 2.5,
-                    "end": 5.0,
-                    "text": "This is a test.",
-                    "position": "top",
-                    "fontsize": 52,
-                    "color": "yellow"
-                }
-            ],
-            "default_style": {
-                "font": "Arial",
-                "fontsize": 48,
-                "color": "white",
-                "bg_color": "black"
             }
-        })
+        )
 
     @pytest.fixture
     def minimal_transcript(self):
         """Minimal transcript with just required fields."""
-        return json.dumps({
-            "subtitles": [
-                {
-                    "start": 0.0,
-                    "end": 2.0,
-                    "text": "Test subtitle"
-                }
-            ]
-        })
+        return json.dumps(
+            {"subtitles": [{"start": 0.0, "end": 2.0, "text": "Test subtitle"}]}
+        )
 
-    def test_subtitle_creator_with_simple_transcript(self, temp_video_file, simple_transcript):
+    def test_subtitle_creator_with_simple_transcript(
+        self, temp_video_file, simple_transcript
+    ):
         """Test subtitle_creator with a simple transcript."""
         with (
             patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,
@@ -106,7 +104,9 @@ class TestSubtitleCreator:
             assert result.endswith(".mp4")
             assert os.path.exists(result) or result.startswith("/tmp/")
 
-    def test_subtitle_creator_with_minimal_transcript(self, temp_video_file, minimal_transcript):
+    def test_subtitle_creator_with_minimal_transcript(
+        self, temp_video_file, minimal_transcript
+    ):
         """Test subtitle_creator with minimal transcript (no styling)."""
         with (
             patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,
@@ -140,7 +140,9 @@ class TestSubtitleCreator:
 
             assert result.endswith(".mp4")
 
-    def test_subtitle_creator_with_tuple_input(self, temp_video_file, simple_transcript):
+    def test_subtitle_creator_with_tuple_input(
+        self, temp_video_file, simple_transcript
+    ):
         """Test subtitle_creator with tuple input (Gradio format)."""
         with (
             patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,
@@ -169,7 +171,9 @@ class TestSubtitleCreator:
             mock_video_clip.assert_called_once_with(temp_video_file)
             assert result.endswith(".mp4")
 
-    def test_subtitle_creator_with_custom_output_path(self, temp_video_file, minimal_transcript, tmp_path):
+    def test_subtitle_creator_with_custom_output_path(
+        self, temp_video_file, minimal_transcript, tmp_path
+    ):
         """Test subtitle_creator with custom output path."""
         with (
             patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,
@@ -216,9 +220,7 @@ class TestSubtitleCreator:
         """Test subtitle_creator with missing subtitles array."""
         transcript = json.dumps({"default_style": {"font": "Arial"}})
 
-        with (
-            patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,
-        ):
+        with (patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,):
             mock_video = Mock()
             mock_video.duration = 10.0
             mock_video.size = (1920, 1080)
@@ -232,9 +234,7 @@ class TestSubtitleCreator:
         """Test subtitle_creator with empty subtitles array."""
         transcript = json.dumps({"subtitles": []})
 
-        with (
-            patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,
-        ):
+        with (patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,):
             mock_video = Mock()
             mock_video.duration = 10.0
             mock_video.size = (1920, 1080)
@@ -246,15 +246,11 @@ class TestSubtitleCreator:
 
     def test_subtitle_creator_with_missing_required_fields(self, temp_video_file):
         """Test subtitle_creator with subtitle missing required fields."""
-        transcript = json.dumps({
-            "subtitles": [
-                {"start": 0.0, "text": "Missing end time"}
-            ]
-        })
+        transcript = json.dumps(
+            {"subtitles": [{"start": 0.0, "text": "Missing end time"}]}
+        )
 
-        with (
-            patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,
-        ):
+        with (patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,):
             mock_video = Mock()
             mock_video.duration = 10.0
             mock_video.size = (1920, 1080)
@@ -266,15 +262,11 @@ class TestSubtitleCreator:
 
     def test_subtitle_creator_with_negative_times(self, temp_video_file):
         """Test subtitle_creator with negative start/end times."""
-        transcript = json.dumps({
-            "subtitles": [
-                {"start": -1.0, "end": 2.0, "text": "Negative start"}
-            ]
-        })
+        transcript = json.dumps(
+            {"subtitles": [{"start": -1.0, "end": 2.0, "text": "Negative start"}]}
+        )
 
-        with (
-            patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,
-        ):
+        with (patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,):
             mock_video = Mock()
             mock_video.duration = 10.0
             mock_video.size = (1920, 1080)
@@ -286,15 +278,11 @@ class TestSubtitleCreator:
 
     def test_subtitle_creator_with_invalid_time_range(self, temp_video_file):
         """Test subtitle_creator with end time before start time."""
-        transcript = json.dumps({
-            "subtitles": [
-                {"start": 5.0, "end": 2.0, "text": "Invalid range"}
-            ]
-        })
+        transcript = json.dumps(
+            {"subtitles": [{"start": 5.0, "end": 2.0, "text": "Invalid range"}]}
+        )
 
-        with (
-            patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,
-        ):
+        with (patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,):
             mock_video = Mock()
             mock_video.duration = 10.0
             mock_video.size = (1920, 1080)
@@ -306,15 +294,11 @@ class TestSubtitleCreator:
 
     def test_subtitle_creator_with_time_exceeding_duration(self, temp_video_file):
         """Test subtitle_creator with start time exceeding video duration."""
-        transcript = json.dumps({
-            "subtitles": [
-                {"start": 15.0, "end": 20.0, "text": "Beyond video"}
-            ]
-        })
+        transcript = json.dumps(
+            {"subtitles": [{"start": 15.0, "end": 20.0, "text": "Beyond video"}]}
+        )
 
-        with (
-            patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,
-        ):
+        with (patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,):
             mock_video = Mock()
             mock_video.duration = 10.0
             mock_video.size = (1920, 1080)
@@ -326,11 +310,9 @@ class TestSubtitleCreator:
 
     def test_subtitle_creator_clamps_end_time(self, temp_video_file):
         """Test that end time is clamped to video duration."""
-        transcript = json.dumps({
-            "subtitles": [
-                {"start": 8.0, "end": 15.0, "text": "End beyond duration"}
-            ]
-        })
+        transcript = json.dumps(
+            {"subtitles": [{"start": 8.0, "end": 15.0, "text": "End beyond duration"}]}
+        )
 
         with (
             patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,
@@ -359,14 +341,21 @@ class TestSubtitleCreator:
 
     def test_subtitle_creator_with_different_positions(self, temp_video_file):
         """Test subtitle_creator with different position options."""
-        transcript = json.dumps({
-            "subtitles": [
-                {"start": 0.0, "end": 1.0, "text": "Bottom", "position": "bottom"},
-                {"start": 1.0, "end": 2.0, "text": "Top", "position": "top"},
-                {"start": 2.0, "end": 3.0, "text": "Center", "position": "center"},
-                {"start": 3.0, "end": 4.0, "text": "Custom", "position": [100, 200]},
-            ]
-        })
+        transcript = json.dumps(
+            {
+                "subtitles": [
+                    {"start": 0.0, "end": 1.0, "text": "Bottom", "position": "bottom"},
+                    {"start": 1.0, "end": 2.0, "text": "Top", "position": "top"},
+                    {"start": 2.0, "end": 3.0, "text": "Center", "position": "center"},
+                    {
+                        "start": 3.0,
+                        "end": 4.0,
+                        "text": "Custom",
+                        "position": [100, 200],
+                    },
+                ]
+            }
+        )
 
         with (
             patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,
@@ -398,17 +387,19 @@ class TestSubtitleCreator:
 
     def test_subtitle_creator_with_stroke_styling(self, temp_video_file):
         """Test subtitle_creator with stroke/outline styling."""
-        transcript = json.dumps({
-            "subtitles": [
-                {
-                    "start": 0.0,
-                    "end": 2.0,
-                    "text": "Outlined text",
-                    "stroke_color": "black",
-                    "stroke_width": 3
-                }
-            ]
-        })
+        transcript = json.dumps(
+            {
+                "subtitles": [
+                    {
+                        "start": 0.0,
+                        "end": 2.0,
+                        "text": "Outlined text",
+                        "stroke_color": "black",
+                        "stroke_width": 3,
+                    }
+                ]
+            }
+        )
 
         with (
             patch("app.tools.subtitle_creator.VideoFileClip") as mock_video_clip,
