@@ -13,6 +13,7 @@ from tools.thumbnail_generator import thumbnail_generator
 from tools.video_composer import video_composer
 from tools.music_selector import music_selector
 from tools.script_generator import script_generator
+from tools.subtitle_creator import subtitle_creator
 
 
 def frame_extractor_wrapper(video_input, thumbnail_timeframe=None):
@@ -215,6 +216,24 @@ with gr.Blocks() as demo:
                 title="Script Generator",
                 description="Generate comprehensive video production scripts from multiple video materials. Upload your source videos and optionally provide creative direction. The AI will analyze the content and create a detailed script including scene breakdowns, timing, transitions, audio recommendations, and visual effects. Outputs both structured JSON and narrative formats.",
                 api_name="script_generator",
+            )
+
+        with gr.Tab("Subtitle Creator"):
+            gr.Interface(
+                fn=subtitle_creator,
+                inputs=[
+                    gr.Video(label="Upload Video"),
+                    gr.Textbox(
+                        label="Transcript (JSON)",
+                        placeholder='{"subtitles": [{"start": 0.0, "end": 2.5, "text": "Hello!", "position": "bottom", "fontsize": 48, "color": "white"}], "default_style": {"fontsize": 48, "color": "white", "bg_color": "#00000042", "position": "bottom", "transparent": true}}',
+                        lines=15,
+                        info="Provide subtitle transcript in JSON format with timestamps, text, and optional styling (position, font, fontsize, color, bg_color, stroke_color, stroke_width).",
+                    ),
+                ],
+                outputs=[gr.Video(label="Video with Subtitles")],
+                title="Subtitle Creator",
+                description="Add customizable subtitles to your videos. Upload a video and provide a JSON transcript with timestamps, text content, and styling options. Supports multiple subtitle segments with individual positioning (top/center/bottom), fonts, colors, and background styling.",
+                api_name="subtitle_creator",
             )
 
 
