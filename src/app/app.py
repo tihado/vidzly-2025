@@ -53,10 +53,52 @@ def frame_extractor_wrapper(video_input, thumbnail_timeframe=None):
 
 with gr.Blocks() as demo:
     with gr.Tab("Vidzly"):
-        # Tell about this project
-        # Agent full workflow here
-
+        # Hero section
         introduction()
+
+        # Interactive workflow
+        gr.Markdown("### 🎬 Create Your Video")
+
+        with gr.Row():
+            with gr.Column():
+                video_input = gr.File(
+                    label="📹 Upload Your Video Clips",
+                    file_count="multiple",
+                    file_types=["video"],
+                )
+                description_input = gr.Textbox(
+                    label="✍️ Describe What You Want",
+                    placeholder="Example: Create an engaging 30-second video about AI technology with upbeat music and captions...",
+                    lines=5,
+                )
+
+            with gr.Column():
+                video_output = gr.Video(label="🎥 Your Generated Video")
+
+        with gr.Row():
+            clear_btn = gr.Button("🔄 Clear", variant="secondary")
+            generate_btn = gr.Button("⚡ Generate Video", variant="primary", scale=2)
+
+        # Placeholder for the processing function
+        def process_video(videos, description):
+            if not videos:
+                return None
+            if not description:
+                # Return first video if no description
+                return videos[0] if isinstance(videos, list) else videos
+            # TODO: Implement full AI processing pipeline
+            return videos[0] if isinstance(videos, list) else videos
+
+        generate_btn.click(
+            fn=process_video,
+            inputs=[video_input, description_input],
+            outputs=[video_output],
+        )
+
+        clear_btn.click(
+            lambda: (None, "", None),
+            outputs=[video_input, description_input, video_output],
+        )
 
     with gr.Tab("MCP Tools"):
         with gr.Tab("Video Summarizer"):
