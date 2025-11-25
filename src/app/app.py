@@ -12,6 +12,7 @@ from tools.frame_extractor import frame_extractor
 from tools.thumbnail_generator import thumbnail_generator
 from tools.video_composer import video_composer
 from tools.music_selector import music_selector
+from tools.script_generator import script_generator
 
 
 def frame_extractor_wrapper(video_input, thumbnail_timeframe=None):
@@ -192,6 +193,28 @@ with gr.Blocks() as demo:
                 title="Music Selector",
                 description="Generate background sound effects using ElevenLabs API based on mood, style, and duration. The generated audio can be used as background music or sound effects for videos. Requires ELEVENLABS_API_KEY in your .env file.",
                 api_name="music_selector",
+            )
+
+        with gr.Tab("Script Generator"):
+            gr.Interface(
+                fn=script_generator,
+                inputs=[
+                    gr.File(
+                        label="Video Materials (Required - upload multiple videos)",
+                        file_count="multiple",
+                        file_types=["video"],
+                    ),
+                    gr.Textbox(
+                        label="User Prompt (Optional)",
+                        placeholder="e.g., 'Create an energetic travel montage with upbeat pacing' or 'Make a dramatic product reveal video'",
+                        lines=3,
+                        info="Optional: Provide specific instructions or creative direction. If left empty, the AI will generate a script based on the video content analysis.",
+                    ),
+                ],
+                outputs=[gr.Textbox(label="Video Production Script (JSON)", lines=25)],
+                title="Script Generator",
+                description="Generate comprehensive video production scripts from multiple video materials. Upload your source videos and optionally provide creative direction. The AI will analyze the content and create a detailed script including scene breakdowns, timing, transitions, audio recommendations, and visual effects. Outputs both structured JSON and narrative formats.",
+                api_name="script_generator",
             )
 
 
