@@ -24,6 +24,9 @@ from tools.frame_extractor import frame_extractor
 from tools.thumbnail_generator import thumbnail_generator
 from tools.video_composer import video_composer
 
+# Import ADK helpers
+from agent_helpers import invoke_agent_simple, extract_json_from_agent_response, extract_file_path_from_response
+
 
 def _normalize_video_inputs(video_inputs: Union[str, List[str], Tuple]) -> List[str]:
     """
@@ -297,7 +300,7 @@ def agent_workflow(
             video_summaries.append(summary_json)
 
         # Generate script using agent for intelligent reasoning
-        status += "\n✍️ Generating composition script..."
+        status += "\n✍️ Generating composition script with AI agent..."
         yield final_video_path, summary_json, script_json, thumbnail_path, status
 
         print(f"Video summaries: {video_summaries}")
@@ -307,11 +310,51 @@ def agent_workflow(
             if len(video_summaries) > 1
             else video_summaries[0]
         )
-        script_json = video_script_generator(
-            video_summaries=summaries_input,
-            user_description=user_description,
-            target_duration=target_duration,
-        )
+        
+        # Use agent for script generation (intelligent reasoning)
+        try:
+            script_prompt = f"""Generate a video composition script based on these video summaries:
+{summaries_input}
+
+User requirements:
+- Description: {user_description or 'No specific requirements'}
+- Target duration: {target_duration} seconds
+
+Please analyze the videos and create a detailed composition script using the video_script_generator tool.
+The script should match the target duration and user description."""
+            
+            agent_response = invoke_agent_simple(
+                script_writer_agent,
+                script_prompt
+            )
+            
+            # Try to extract script from agent response
+            script_json = extract_json_from_agent_response(agent_response)
+            if script_json:
+                script_json = json.dumps(script_json)
+            else:
+                # Fallback: extract script JSON from text
+                import re
+                json_match = re.search(r'\{.*\}', agent_response, re.DOTALL)
+                if json_match:
+                    script_json = json_match.group(0)
+                else:
+                    # Final fallback: use direct tool call
+                    status += "\n⚠️ Agent response unclear, using direct tool call..."
+                    script_json = video_script_generator(
+                        video_summaries=summaries_input,
+                        user_description=user_description,
+                        target_duration=target_duration,
+                    )
+        except Exception as e:
+            # Fallback to direct tool call on error
+            status += f"\n⚠️ Agent error ({str(e)[:50]}), using direct tool call..."
+            print(f"Agent error: {e}")
+            script_json = video_script_generator(
+                video_summaries=summaries_input,
+                user_description=user_description,
+                target_duration=target_duration,
+            )
 
         print(f"Script JSON: {script_json}")
 
@@ -340,19 +383,52 @@ def agent_workflow(
                 except:
                     pass
 
-        # Generate music if requested
+        # Generate music if requested (using agent for intelligent selection)
         music_path = None
         if generate_music:
-            status += "\n🎵 Generating background music..."
+            status += "\n🎵 Generating background music with AI agent..."
             yield final_video_path, summary_json, script_json, thumbnail_path, status
 
-            music_path = music_selector(
-                mood=mood,
-                target_duration=target_duration,
-                bpm=bpm,
-                looping=True,
-                prompt_influence=0.3,
-            )
+            try:
+                # Use agent for music selection (intelligent mood/style matching)
+                music_prompt = f"""Generate appropriate background music for this video script:
+{script_json[:500]}...
+
+The mood is: {mood}
+Target duration: {target_duration} seconds
+BPM: {bpm if bpm else 'auto'}
+
+Please use the music_selector tool to generate music that matches the video's mood and style."""
+                
+                agent_response = invoke_agent_simple(
+                    script_writer_agent,
+                    music_prompt
+                )
+                
+                # Try to extract music path from response
+                music_path = extract_file_path_from_response(agent_response)
+                
+                if not music_path:
+                    # Fallback: use direct tool call
+                    status += "\n⚠️ Could not extract music path, using direct tool call..."
+                    music_path = music_selector(
+                        mood=mood,
+                        target_duration=target_duration,
+                        bpm=bpm,
+                        looping=True,
+                        prompt_influence=0.3,
+                    )
+            except Exception as e:
+                # Fallback to direct tool call on error
+                status += f"\n⚠️ Agent error ({str(e)[:50]}), using direct tool call..."
+                print(f"Agent error: {e}")
+                music_path = music_selector(
+                    mood=mood,
+                    target_duration=target_duration,
+                    bpm=bpm,
+                    looping=True,
+                    prompt_influence=0.3,
+                )
 
         # Phase 2: Extract frame, generate thumbnail, compose video
         status += "\n🎨 Phase 2: Creating thumbnail and composing video..."
@@ -384,17 +460,47 @@ def agent_workflow(
 
         print(f"Frame path: {frame_path}")
 
-        # Generate thumbnail
-        status += "\n🎨 Generating thumbnail..."
+        # Generate thumbnail (using agent for intelligent design)
+        status += "\n🎨 Generating thumbnail with AI agent..."
         yield final_video_path, summary_json, script_json, thumbnail_path, status
 
         if not summary_text:
             summary_text = "Video content"
 
-        thumbnail_path = thumbnail_generator(
-            image_input=frame_path,
-            summary=summary_text,
-        )
+        try:
+            # Use agent for thumbnail generation (intelligent design decisions)
+            thumbnail_prompt = f"""Generate an engaging thumbnail for this video.
+
+Frame image: {frame_path}
+Video summary: {summary_text[:300]}
+Script: {script_json[:300]}...
+
+Please use the thumbnail_generator tool to create an engaging thumbnail with appropriate text and stickers
+that matches the video content and style."""
+            
+            agent_response = invoke_agent_simple(
+                video_editor_agent,
+                thumbnail_prompt
+            )
+            
+            # Try to extract thumbnail path from response
+            thumbnail_path = extract_file_path_from_response(agent_response)
+            
+            if not thumbnail_path:
+                # Fallback: use direct tool call
+                status += "\n⚠️ Could not extract thumbnail path, using direct tool call..."
+                thumbnail_path = thumbnail_generator(
+                    image_input=frame_path,
+                    summary=summary_text,
+                )
+        except Exception as e:
+            # Fallback to direct tool call on error
+            status += f"\n⚠️ Agent error ({str(e)[:50]}), using direct tool call..."
+            print(f"Agent error: {e}")
+            thumbnail_path = thumbnail_generator(
+                image_input=frame_path,
+                summary=summary_text,
+            )
 
         # Compose final video
         status += "\n🎬 Composing final video..."

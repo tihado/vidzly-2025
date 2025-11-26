@@ -103,6 +103,10 @@ Generate the complete thumbnail image with all these elements integrated."""
 
         # Use Gemini to generate the thumbnail image directly
         # Use gemini-2.5-flash-image model which supports image generation
+        response = None
+        last_error = None
+        
+        # Try with response_modalities first
         try:
             response = client.models.generate_content(
                 model="gemini-2.5-flash-image",
@@ -111,15 +115,30 @@ Generate the complete thumbnail image with all these elements integrated."""
                     "response_modalities": ["IMAGE"],
                 },
             )
-        except Exception as e:
-            # If response_modalities doesn't work, try without it
+        except (AttributeError, TypeError) as e:
+            # If response_modalities attribute error, try without config
+            last_error = e
             try:
                 response = client.models.generate_content(
                     model="gemini-2.5-flash-image",
                     contents=[prompt, image_part],
                 )
-            except:
-                raise Exception(f"Failed to generate image with Gemini: {str(e)}")
+            except Exception as e2:
+                raise Exception(f"Failed to generate image with Gemini (response_modalities error: {str(e)}): {str(e2)}")
+        except Exception as e:
+            # For other errors, also try without response_modalities
+            last_error = e
+            try:
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash-image",
+                    contents=[prompt, image_part],
+                )
+            except Exception as e2:
+                raise Exception(f"Failed to generate image with Gemini: {str(e)} (fallback also failed: {str(e2)})")
+
+        # Check if response is None
+        if response is None:
+            raise Exception("Gemini API returned None response")
 
         # Extract the generated image from the response
         generated_image = None
