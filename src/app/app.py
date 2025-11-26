@@ -14,6 +14,31 @@ from tools.video_composer import video_composer
 from tools.music_selector import music_selector
 from tools.video_script_generator import video_script_generator
 from workflow_ui import workflow_ui
+from tools.text_to_speech import text_to_speech_simple
+from tools.script_generator import script_generator
+from tools.subtitle_creator import subtitle_creator
+
+
+def text_to_speech_wrapper(
+    text, voice, language, speed, format_type, generate_segments
+):
+    """
+    Wrapper to return audio file for Gradio.
+    """
+    result = text_to_speech_simple(
+        text, voice, language, speed, format_type, generate_segments
+    )
+    # Always return audio file path (Gradio will render audio player)
+    return result
+
+
+def video_composer_wrapper(script, video_clips, music_path=None):
+    """
+    Wrapper to return both video and script JSON for easy workflow.
+    """
+    video_path = video_composer(video_clips, music_path)
+    # Return video path and the original script (for subtitle generator)
+    return video_path
 
 
 def frame_extractor_wrapper(video_input, thumbnail_timeframe=None):
@@ -123,7 +148,7 @@ with gr.Blocks() as demo:
 
         with gr.Tab("Video Composer"):
             gr.Interface(
-                fn=video_composer,
+                fn=video_composer_wrapper,
                 inputs=[
                     gr.Textbox(
                         label="Script (JSON)",
@@ -143,12 +168,16 @@ with gr.Blocks() as demo:
                     gr.Image(
                         label="Thumbnail Image (Optional)",
                         type="filepath",
-                        info="Optional thumbnail image that will be overlaid on the first frame of the video. You can use the Thumbnail Generation tool to create one.",
                     ),
                 ],
-                outputs=[gr.Video(label="Composed Video")],
+                outputs=[
+                    gr.Video(label="Composed Video"),
+                    gr.Textbox(
+                        label="Script JSON (Copy this to Subtitle Generator)", lines=10
+                    ),
+                ],
                 title="Video Composer",
-                description="Combine video clips, add music, and apply transitions according to a script. Upload source videos, then provide a JSON script where each scene's 'source_video' references a video by index (0-based) or filename. The same video can be used in multiple scenes with different time ranges. Optionally add a thumbnail image that will be overlaid on the first frame.",
+                description="Combine video clips, add music, and apply transitions according to a script. Upload source videos, then provide a JSON script where each scene's 'source_video' references a video by index (0-based) or filename. The same video can be used in multiple scenes with different time ranges. The script JSON output can be copied directly to Subtitle Generator.",
                 api_name="video_composer",
             )
 
@@ -232,6 +261,103 @@ with gr.Blocks() as demo:
                 title="Video Script Generator",
                 description="Create a detailed script/storyboard for a video composition. Uses Google Gemini AI to intelligently generate a script based on video summaries and user requirements. The script includes scene sequences, timings, transitions, music configuration, pacing, and narrative structure. Requires GOOGLE_API_KEY in your .env file.",
                 api_name="video_script_generator",
+            )
+
+        with gr.Tab("Text-to-Speech"):
+            gr.Interface(
+                fn=text_to_speech_wrapper,
+                inputs=[
+                    gr.Textbox(
+                        label="Text or Subtitle Content",
+                        placeholder='Enter text or paste subtitle content (SRT/VTT/JSON)...\n\nPlain text example:\n"Welcome to our video tutorial on AI."\n\nSRT example:\n1\n00:00:00,000 --> 00:00:03,500\nWelcome to our video.\n\n2\n00:00:03,500 --> 00:00:07,000\nToday we will learn.',
+                        lines=8,
+                        info="Enter plain text OR paste subtitle content. Format will be auto-detected. All subtitle dialogues will be combined into narration.",
+                    ),
+                    gr.Radio(
+                        choices=["neutral", "male", "female"],
+                        value="neutral",
+                        label="Voice Type",
+                        info="Select voice accent: Male (British), Female (Australian), or Neutral (US)",
+                    ),
+                    gr.Dropdown(
+                        choices=[
+                            ("English", "en"),
+                            ("Spanish", "es"),
+                            ("French", "fr"),
+                            ("German", "de"),
+                            ("Italian", "it"),
+                            ("Portuguese", "pt"),
+                            ("Chinese", "zh"),
+                            ("Japanese", "ja"),
+                            ("Korean", "ko"),
+                            ("Arabic", "ar"),
+                        ],
+                        value="en",
+                        label="Language",
+                        info="Select the language for text-to-speech conversion",
+                    ),
+                    gr.Radio(
+                        choices=["normal", "slow"],
+                        value="normal",
+                        label="Speed",
+                        info="Speech speed: Normal or Slow (for learning/clarity)",
+                    ),
+                    gr.Radio(
+                        choices=["auto", "text", "srt", "vtt", "json"],
+                        value="auto",
+                        label="Input Format",
+                        info="Auto-detect format or manually specify: Plain text, SRT subtitle, VTT subtitle, or JSON scenario",
+                    ),
+                    gr.Checkbox(
+                        value=False,
+                        label="Generate Timed Segments",
+                        info="Create separate audio files for each subtitle segment with timing info (for video synchronization). Only works with subtitle input formats.",
+                    ),
+                ],
+                outputs=[gr.Audio(label="Generated Audio", type="filepath")],
+                title="Text-to-Speech Converter",
+                description="Convert text or subtitles to audio using Google Text-to-Speech. Supports plain text, SRT, VTT, and JSON formats. Enable 'Generate Timed Segments' to create individual audio files for each subtitle with timing metadata (perfect for video synchronization with Video Composer output).",
+                api_name="text_to_speech",
+            )
+
+        with gr.Tab("Script Generator"):
+            gr.Interface(
+                fn=script_generator,
+                inputs=[
+                    gr.File(
+                        label="Video Materials (Required - upload multiple videos)",
+                        file_count="multiple",
+                        file_types=["video"],
+                    ),
+                    gr.Textbox(
+                        label="User Prompt (Optional)",
+                        placeholder="e.g., 'Create an energetic travel montage with upbeat pacing' or 'Make a dramatic product reveal video'",
+                        lines=3,
+                        info="Optional: Provide specific instructions or creative direction. If left empty, the AI will generate a script based on the video content analysis.",
+                    ),
+                ],
+                outputs=[gr.Textbox(label="Video Production Script (JSON)", lines=25)],
+                title="Script Generator",
+                description="Generate comprehensive video production scripts from multiple video materials. Upload your source videos and optionally provide creative direction. The AI will analyze the content and create a detailed script including scene breakdowns, timing, transitions, audio recommendations, and visual effects. Outputs both structured JSON and narrative formats.",
+                api_name="script_generator",
+            )
+
+        with gr.Tab("Subtitle Creator"):
+            gr.Interface(
+                fn=subtitle_creator,
+                inputs=[
+                    gr.Video(label="Upload Video"),
+                    gr.Textbox(
+                        label="Transcript (JSON)",
+                        placeholder='{"subtitles": [{"start": 0.0, "end": 2.5, "text": "Hello!", "position": "bottom", "fontsize": 48, "color": "white"}], "default_style": {"fontsize": 48, "color": "white", "bg_color": "#00000042", "position": "bottom", "transparent": true}}',
+                        lines=15,
+                        info="Provide subtitle transcript in JSON format with timestamps, text, and optional styling (position, font, fontsize, color, bg_color, stroke_color, stroke_width).",
+                    ),
+                ],
+                outputs=[gr.Video(label="Video with Subtitles")],
+                title="Subtitle Creator",
+                description="Add customizable subtitles to your videos. Upload a video and provide a JSON transcript with timestamps, text content, and styling options. Supports multiple subtitle segments with individual positioning (top/center/bottom), fonts, colors, and background styling.",
+                api_name="subtitle_creator",
             )
 
 

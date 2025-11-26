@@ -16,6 +16,7 @@ pillow = "11"
 python-dotenv = "^1.0.0"
 elevenlabs = "^2.24.0"
 google-adk = "^1.19.0"
+gtts = "^2.5.0"
 
 
 [tool.poetry.group.dev.dependencies]

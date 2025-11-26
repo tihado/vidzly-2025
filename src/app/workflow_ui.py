@@ -7,10 +7,15 @@ def run_workflow(videos, description, duration, music):
     """Wrapper function to run the workflow with progress updates."""
     # Handle empty or None input
     if not videos or (isinstance(videos, list) and len(videos) == 0):
-        return None, "❌ Please upload at least one video file.", "", ""
+        return None, "❌ Please upload at least one video file.", "", "", None
 
-    # Progress callback function - collect messages
-    status_messages = []
+    # Collect all progress messages
+    progress_messages = []
+
+    # Progress callback function that collects messages
+    def progress_callback(msg):
+        progress_messages.append(msg)
+        print(f"Progress: {msg}")  # Print to console for visibility
 
     try:
         # Run the agent-controlled workflow
@@ -19,20 +24,21 @@ def run_workflow(videos, description, duration, music):
             user_description=description.strip() if description else None,
             target_duration=float(duration),
             generate_music=bool(music),
-            progress_callback=lambda msg: status_messages.append(msg),
+            progress_callback=progress_callback,
         )
 
-        # Build status message from collected progress updates
-        status = (
-            "\n".join(status_messages)
-            if status_messages
-            else "✅ Video creation complete!"
-        )
+        # Build status message showing all progress steps
+        if progress_messages:
+            status = "\n".join(progress_messages)
+        else:
+            status = "✅ Video creation complete!"
 
         return final_path, status, summary_json, script_json, thumbnail_path
 
     except Exception as e:
         error_msg = f"❌ Error: {str(e)}\n\nDetails: {traceback.format_exc()}"
+        if progress_messages:
+            error_msg = "\n".join(progress_messages) + "\n\n" + error_msg
         return None, error_msg, "", "", None
 
 
@@ -99,7 +105,8 @@ def workflow_ui():
                     label="Status",
                     value="Ready to create your video!",
                     interactive=False,
-                    lines=2,
+                    lines=10,
+                    max_lines=20,
                 )
 
                 final_video = gr.Video(
