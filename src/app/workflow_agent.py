@@ -109,14 +109,12 @@ def _create_tool_wrappers():
 
 def _create_script_writer_agent(
     tools: Dict[str, FunctionTool],
-    progress_callback: Optional[Callable[[str], None]] = None,
 ) -> LlmAgent:
     """
     Create Script Writer Agent for video analysis, script generation, and music selection.
 
     Args:
         tools: Dictionary of available tools
-        progress_callback: Optional callback for progress updates
 
     Returns:
         LlmAgent configured as Script Writer
@@ -152,14 +150,12 @@ Be thorough and creative in your analysis and script generation."""
 
 def _create_video_editor_agent(
     tools: Dict[str, FunctionTool],
-    progress_callback: Optional[Callable[[str], None]] = None,
 ) -> LlmAgent:
     """
     Create Video Editor Agent for frame extraction, thumbnail generation, and video composition.
 
     Args:
         tools: Dictionary of available tools
-        progress_callback: Optional callback for progress updates
 
     Returns:
         LlmAgent configured as Video Editor
@@ -195,14 +191,12 @@ Be precise and ensure high-quality output."""
 
 def _create_manager_agent(
     tools: Dict[str, FunctionTool],
-    progress_callback: Optional[Callable[[str], None]] = None,
 ) -> LlmAgent:
     """
     Create Manager Agent that orchestrates the workflow.
 
     Args:
         tools: Dictionary of all available tools
-        progress_callback: Optional callback for progress updates
 
     Returns:
         LlmAgent configured as Manager
@@ -240,8 +234,7 @@ def agent_workflow(
     user_description: Optional[str] = None,
     target_duration: float = 30.0,
     generate_music: bool = True,
-    progress_callback: Optional[Callable[[str], None]] = None,
-) -> Tuple[str, str, str, str]:
+) -> Tuple[str, str, str, str, str]:
     """
     Agent-controlled workflow using Google ADK that intelligently reasons, plans,
     and executes video creation using MCP tools dynamically.
@@ -251,11 +244,17 @@ def agent_workflow(
         user_description: Optional description of desired mood/style
         target_duration: Target duration in seconds (default: 30.0)
         generate_music: Whether to generate music (default: True)
-        progress_callback: Optional callback function(status_message) for progress updates
 
-    Returns:
-        Tuple of (final_video_path: str, summary_json: str, script_json: str, thumbnail_path: str)
+    Yields:
+        Tuple of (final_video_path: str, summary_json: str, script_json: str, thumbnail_path: str, status: str)
+        Progress updates are streamed in real-time as the workflow progresses.
     """
+
+    final_video_path = None
+    summary_json = ""
+    script_json = ""
+    thumbnail_path = None
+    status = "Starting workflow..."
     try:
         # Validate API key
         api_key = os.getenv("GOOGLE_API_KEY")
@@ -266,8 +265,9 @@ def agent_workflow(
             )
 
         # Normalize video inputs
-        if progress_callback:
-            progress_callback("📥 Processing video inputs...")
+        status += "\n📥 Processing video inputs..."
+        yield final_video_path, summary_json, script_json, thumbnail_path, status
+
         video_paths = _normalize_video_inputs(video_inputs)
 
         if not video_paths:
@@ -277,28 +277,28 @@ def agent_workflow(
         tools = _create_tool_wrappers()
 
         # Create specialized agents (available for future use or complex reasoning)
-        script_writer_agent = _create_script_writer_agent(tools, progress_callback)
-        video_editor_agent = _create_video_editor_agent(tools, progress_callback)
+        script_writer_agent = _create_script_writer_agent(tools)
+        video_editor_agent = _create_video_editor_agent(tools)
 
         # Create manager agent for orchestration
-        manager_agent = _create_manager_agent(tools, progress_callback)
+        manager_agent = _create_manager_agent(tools)
 
         # Phase 1: Analyze videos and generate script
-        if progress_callback:
-            progress_callback("🎬 Phase 1: Analyzing videos and generating script...")
+        status += "\n🎬 Phase 1: Analyzing videos and generating script..."
+        yield final_video_path, summary_json, script_json, thumbnail_path, status
 
         # Analyze all videos using direct tool calls (more reliable)
         video_summaries = []
         for i, video_path in enumerate(video_paths):
-            if progress_callback:
-                progress_callback(f"📹 Analyzing video {i+1}/{len(video_paths)}...")
+            status += f"\n📹 Analyzing video {i+1}/{len(video_paths)}..."
+            yield final_video_path, summary_json, script_json, thumbnail_path, status
 
             summary_json = video_summarizer(video_path, fps=2.0)
             video_summaries.append(summary_json)
 
         # Generate script using agent for intelligent reasoning
-        if progress_callback:
-            progress_callback("✍️ Generating composition script...")
+        status += "\n✍️ Generating composition script..."
+        yield final_video_path, summary_json, script_json, thumbnail_path, status
 
         print(f"Video summaries: {video_summaries}")
 
@@ -343,8 +343,8 @@ def agent_workflow(
         # Generate music if requested
         music_path = None
         if generate_music:
-            if progress_callback:
-                progress_callback("🎵 Generating background music...")
+            status += "\n🎵 Generating background music..."
+            yield final_video_path, summary_json, script_json, thumbnail_path, status
 
             music_path = music_selector(
                 mood=mood,
@@ -355,12 +355,12 @@ def agent_workflow(
             )
 
         # Phase 2: Extract frame, generate thumbnail, compose video
-        if progress_callback:
-            progress_callback("🎨 Phase 2: Creating thumbnail and composing video...")
+        status += "\n🎨 Phase 2: Creating thumbnail and composing video..."
+        yield final_video_path, summary_json, script_json, thumbnail_path, status
 
         # Extract frame from first video
-        if progress_callback:
-            progress_callback("🖼️ Extracting representative frame...")
+        status += "\n🖼️ Extracting representative frame..."
+        yield final_video_path, summary_json, script_json, thumbnail_path, status
 
         # Get thumbnail timeframe from first video summary
         thumbnail_timeframe = None
@@ -385,8 +385,8 @@ def agent_workflow(
         print(f"Frame path: {frame_path}")
 
         # Generate thumbnail
-        if progress_callback:
-            progress_callback("🎨 Generating thumbnail...")
+        status += "\n🎨 Generating thumbnail..."
+        yield final_video_path, summary_json, script_json, thumbnail_path, status
 
         if not summary_text:
             summary_text = "Video content"
@@ -397,8 +397,8 @@ def agent_workflow(
         )
 
         # Compose final video
-        if progress_callback:
-            progress_callback("🎬 Composing final video...")
+        status += "\n🎬 Composing final video..."
+        yield final_video_path, summary_json, script_json, thumbnail_path, status
 
         final_video_path = video_composer(
             script=script_json,
@@ -414,12 +414,10 @@ def agent_workflow(
             else video_summaries[0]
         )
 
-        if progress_callback:
-            progress_callback("✅ Video creation complete!")
-
-        return (final_video_path, summary_json, script_json, thumbnail_path)
+        status += "\n✅ Video creation complete!"
+        yield final_video_path, summary_json, script_json, thumbnail_path, status
 
     except Exception as e:
-        if progress_callback:
-            progress_callback(f"❌ Error: {str(e)}")
+        status += f"\n❌ Error: {str(e)}"
+        yield final_video_path, summary_json, script_json, thumbnail_path, status
         raise

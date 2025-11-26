@@ -4,42 +4,39 @@ from workflow_agent import agent_workflow
 
 
 def run_workflow(videos, description, duration, music):
-    """Wrapper function to run the workflow with progress updates."""
+    """
+    Generator function that runs the workflow and yields progress updates in real-time.
+
+    According to Gradio's streaming outputs guide, generator functions yield values
+    that update the UI in real-time as they're produced.
+    """
     # Handle empty or None input
     if not videos or (isinstance(videos, list) and len(videos) == 0):
-        return None, "❌ Please upload at least one video file.", "", "", None
-
-    # Collect all progress messages
-    progress_messages = []
-
-    # Progress callback function that collects messages
-    def progress_callback(msg):
-        progress_messages.append(msg)
-        print(f"Progress: {msg}")  # Print to console for visibility
+        yield None, "❌ Please upload at least one video file.", "", "", None
+        return
 
     try:
-        # Run the agent-controlled workflow
-        final_path, summary_json, script_json, thumbnail_path = agent_workflow(
+        # Iterate through the generator from agent_workflow
+        # This will yield progress updates in real-time
+        for (
+            final_path,
+            summary_json,
+            script_json,
+            thumbnail_path,
+            status,
+        ) in agent_workflow(
             video_inputs=videos,
             user_description=description.strip() if description else None,
             target_duration=float(duration),
             generate_music=bool(music),
-            progress_callback=progress_callback,
-        )
-
-        # Build status message showing all progress steps
-        if progress_messages:
-            status = "\n".join(progress_messages)
-        else:
-            status = "✅ Video creation complete!"
-
-        return final_path, status, summary_json, script_json, thumbnail_path
+        ):
+            # Yield each progress update to Gradio
+            # Gradio will automatically update the UI with each yield
+            yield final_path, status, summary_json, script_json, thumbnail_path
 
     except Exception as e:
         error_msg = f"❌ Error: {str(e)}\n\nDetails: {traceback.format_exc()}"
-        if progress_messages:
-            error_msg = "\n".join(progress_messages) + "\n\n" + error_msg
-        return None, error_msg, "", "", None
+        yield None, error_msg, "", "", None
 
 
 def workflow_ui():
@@ -97,10 +94,7 @@ def workflow_ui():
                     size="lg",
                 )
 
-            with gr.Column(scale=1):
-                # Output section
-                gr.Markdown("### 📤 Output")
-
+                gr.Markdown("### 📝 Status")
                 progress_status = gr.Textbox(
                     label="Status",
                     value="Ready to create your video!",
@@ -109,28 +103,34 @@ def workflow_ui():
                     max_lines=20,
                 )
 
-                final_video = gr.Video(
-                    label="Final Video",
-                    height=400,
-                )
+            with gr.Column(scale=2):
+                # Output section
+                gr.Markdown("### 🟢 Output")
 
                 thumbnail_image = gr.Image(
                     label="Generated Thumbnail",
                     type="filepath",
-                    height=300,
+                    height=400,
                     visible=True,
+                )
+
+                final_video = gr.Video(
+                    label="Final Video",
+                    height=400,
                 )
 
                 with gr.Accordion("📋 Details", open=False):
                     summary_display = gr.Textbox(
                         label="Video Analysis Summary",
                         lines=10,
+                        max_lines=20,
                         interactive=False,
                     )
 
                     script_display = gr.Textbox(
                         label="Generated Script",
                         lines=10,
+                        max_lines=20,
                         interactive=False,
                     )
 

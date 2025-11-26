@@ -346,28 +346,50 @@ def video_composer(
         # Add thumbnail image to first frame if provided
         if thumbnail_path and os.path.exists(thumbnail_path):
             try:
-                # Load the thumbnail image
-                thumbnail_clip = ImageClip(thumbnail_path)
+                from PIL import Image as PILImage
 
                 # Get video dimensions
                 video_width = final_video.w
                 video_height = final_video.h
 
-                # Resize thumbnail to match video dimensions if needed
-                thumbnail_clip = thumbnail_clip.resize((video_width, video_height))
+                # Load and resize thumbnail image using PIL
+                pil_image = PILImage.open(thumbnail_path)
+                pil_image = pil_image.resize(
+                    (video_width, video_height), PILImage.Resampling.LANCZOS
+                )
+
+                # Save resized image to temporary file
+                import tempfile
+
+                temp_thumbnail = tempfile.NamedTemporaryFile(
+                    suffix=".png", delete=False
+                )
+                pil_image.save(temp_thumbnail.name, "PNG")
+                temp_thumbnail.close()
+
+                # Load the resized thumbnail as ImageClip
+                thumbnail_clip = ImageClip(temp_thumbnail.name)
 
                 # Set duration to match one frame duration (very short)
                 # This ensures it only appears on the first frame
+                # MoviePy 2.x uses with_duration instead of set_duration
                 fps = final_video.fps if final_video.fps > 0 else 30.0
                 frame_duration = 1.0 / fps
-                thumbnail_clip = thumbnail_clip.set_duration(frame_duration)
+                thumbnail_clip = thumbnail_clip.with_duration(frame_duration)
 
                 # Position at the start (t=0) so it overlays the first frame
-                thumbnail_clip = thumbnail_clip.set_start(0)
+                # MoviePy 2.x uses with_start instead of set_start
+                thumbnail_clip = thumbnail_clip.with_start(0)
 
                 # Composite the thumbnail over the video
                 # The thumbnail will appear on top of the first frame
                 final_video = CompositeVideoClip([final_video, thumbnail_clip])
+
+                # Clean up temporary file after composition
+                try:
+                    os.unlink(temp_thumbnail.name)
+                except:
+                    pass
             except Exception as e:
                 # If thumbnail overlay fails, continue without thumbnail
                 print(f"Warning: Could not add thumbnail image: {str(e)}")
@@ -391,10 +413,14 @@ def video_composer(
 
                 # Set audio volume (can be adjusted based on script music settings)
                 audio_volume = script_data.get("music", {}).get("volume", 0.5)
-                audio_clip = audio_clip.volumex(audio_volume)
+
+                # Apply volume adjustment using MoviePy 2.x API
+                # MoviePy 2.1.2+ uses with_volume_scaled instead of volumex
+                audio_clip = audio_clip.with_volume_scaled(audio_volume)
 
                 # Combine video with audio
-                final_video = final_video.set_audio(audio_clip)
+                # MoviePy 2.x uses with_audio instead of set_audio
+                final_video = final_video.with_audio(audio_clip)
             except Exception as e:
                 # If music loading fails, continue without music
                 print(f"Warning: Could not add music: {str(e)}")
