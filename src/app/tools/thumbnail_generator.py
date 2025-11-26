@@ -105,7 +105,7 @@ Generate the complete thumbnail image with all these elements integrated."""
         # Use gemini-2.5-flash-image model which supports image generation
         response = None
         last_error = None
-        
+
         # Try with response_modalities first
         try:
             response = client.models.generate_content(
@@ -124,7 +124,9 @@ Generate the complete thumbnail image with all these elements integrated."""
                     contents=[prompt, image_part],
                 )
             except Exception as e2:
-                raise Exception(f"Failed to generate image with Gemini (response_modalities error: {str(e)}): {str(e2)}")
+                raise Exception(
+                    f"Failed to generate image with Gemini (response_modalities error: {str(e)}): {str(e2)}"
+                )
         except Exception as e:
             # For other errors, also try without response_modalities
             last_error = e
@@ -134,7 +136,9 @@ Generate the complete thumbnail image with all these elements integrated."""
                     contents=[prompt, image_part],
                 )
             except Exception as e2:
-                raise Exception(f"Failed to generate image with Gemini: {str(e)} (fallback also failed: {str(e2)})")
+                raise Exception(
+                    f"Failed to generate image with Gemini: {str(e)} (fallback also failed: {str(e2)})"
+                )
 
         # Check if response is None
         if response is None:

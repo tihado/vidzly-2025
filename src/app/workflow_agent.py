@@ -25,7 +25,11 @@ from tools.thumbnail_generator import thumbnail_generator
 from tools.video_composer import video_composer
 
 # Import ADK helpers
-from agent_helpers import invoke_agent_simple, extract_json_from_agent_response, extract_file_path_from_response
+from agent_helpers import (
+    invoke_agent_simple,
+    extract_json_from_agent_response,
+    extract_file_path_from_response,
+)
 
 
 def _normalize_video_inputs(video_inputs: Union[str, List[str], Tuple]) -> List[str]:
@@ -310,7 +314,7 @@ def agent_workflow(
             if len(video_summaries) > 1
             else video_summaries[0]
         )
-        
+
         # Use agent for script generation (intelligent reasoning)
         try:
             script_prompt = f"""Generate a video composition script based on these video summaries:
@@ -322,12 +326,9 @@ User requirements:
 
 Please analyze the videos and create a detailed composition script using the video_script_generator tool.
 The script should match the target duration and user description."""
-            
-            agent_response = invoke_agent_simple(
-                script_writer_agent,
-                script_prompt
-            )
-            
+
+            agent_response = invoke_agent_simple(script_writer_agent, script_prompt)
+
             # Try to extract script from agent response
             script_json = extract_json_from_agent_response(agent_response)
             if script_json:
@@ -335,7 +336,8 @@ The script should match the target duration and user description."""
             else:
                 # Fallback: extract script JSON from text
                 import re
-                json_match = re.search(r'\{.*\}', agent_response, re.DOTALL)
+
+                json_match = re.search(r"\{.*\}", agent_response, re.DOTALL)
                 if json_match:
                     script_json = json_match.group(0)
                 else:
@@ -399,18 +401,17 @@ Target duration: {target_duration} seconds
 BPM: {bpm if bpm else 'auto'}
 
 Please use the music_selector tool to generate music that matches the video's mood and style."""
-                
-                agent_response = invoke_agent_simple(
-                    script_writer_agent,
-                    music_prompt
-                )
-                
+
+                agent_response = invoke_agent_simple(script_writer_agent, music_prompt)
+
                 # Try to extract music path from response
                 music_path = extract_file_path_from_response(agent_response)
-                
+
                 if not music_path:
                     # Fallback: use direct tool call
-                    status += "\n⚠️ Could not extract music path, using direct tool call..."
+                    status += (
+                        "\n⚠️ Could not extract music path, using direct tool call..."
+                    )
                     music_path = music_selector(
                         mood=mood,
                         target_duration=target_duration,
@@ -477,18 +478,17 @@ Script: {script_json[:300]}...
 
 Please use the thumbnail_generator tool to create an engaging thumbnail with appropriate text and stickers
 that matches the video content and style."""
-            
-            agent_response = invoke_agent_simple(
-                video_editor_agent,
-                thumbnail_prompt
-            )
-            
+
+            agent_response = invoke_agent_simple(video_editor_agent, thumbnail_prompt)
+
             # Try to extract thumbnail path from response
             thumbnail_path = extract_file_path_from_response(agent_response)
-            
+
             if not thumbnail_path:
                 # Fallback: use direct tool call
-                status += "\n⚠️ Could not extract thumbnail path, using direct tool call..."
+                status += (
+                    "\n⚠️ Could not extract thumbnail path, using direct tool call..."
+                )
                 thumbnail_path = thumbnail_generator(
                     image_input=frame_path,
                     summary=summary_text,
