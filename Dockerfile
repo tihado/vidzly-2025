@@ -1,6 +1,7 @@
 # Use Python 3.12 slim image as base
 FROM python:3.12-slim
 
+RUN useradd -m -u 1000 user
 # Set working directory
 WORKDIR /app
 
@@ -24,14 +25,14 @@ RUN pip install --no-cache-dir poetry && \
     poetry config virtualenvs.create false
 
 # Copy Poetry configuration files
-COPY pyproject.toml poetry.lock* ./
+COPY --chown=user pyproject.toml poetry.lock* ./
 
 # Install dependencies using Poetry
 # Only install production dependencies (exclude dev dependencies)
 RUN poetry install --no-interaction --no-ansi --without dev
 
 # Copy application code
-COPY src/ ./src/
+COPY --chown=user src/ ./src/
 
 # Set environment variables
 # Note: These should be provided at runtime via docker run -e or docker-compose
