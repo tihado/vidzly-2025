@@ -1,11 +1,22 @@
 ---
 title: Vidzly
+short_description: Transform raw footage into viral-ready content in seconds. No skills required. No expensive gear needed. Just your vision and our AI.
+thumbnail: https://cdn.tihado.com/app.png
 emoji: 🎬
 colorFrom: blue
 colorTo: purple
 sdk: docker
 app_port: 7860
 pinned: false
+tags:
+  - mcp-in-action-track-creative
+  - building-mcp-track-creative
+  - video-editor
+  - mcp-server
+  - gradio
+  - gemini
+  - elevenlabs
+  - gradio-mcp
 ---
 
 <p align="center">
@@ -67,6 +78,17 @@ Vidzly provides a comprehensive suite of MCP tools accessible through a Gradio w
 - **Video Processing**: MoviePy for video editing and composition
 - **Image Processing**: OpenCV and Pillow for frame extraction and thumbnail generation
 - **Testing**: Comprehensive pytest test suite with unit and integration tests
+
+## 👥 Team
+
+**Team Name:** FleetMind AI Team
+
+**Team Members:**
+
+- 🐮 Hồng Hạnh - [@tthhanh](https://huggingface.co/tthhanh) - AI Engineer
+- 🐔 Việt Tiến - [@tiena2cva](https://huggingface.co/tiena2cva) - AI Engineer
+- 🐻 Nhật Linh - [@Nlag](https://huggingface.co/NLag) - AI Engineer
+- 🐰 Phương Nhi - [@Daphneee17](https://huggingface.co/Daphneee17) - AI Engineer
 
 ## Setup
 
@@ -235,10 +257,3 @@ poetry run pytest tests/test_video_summarizer.py
 - **Pillow 11**: Image processing for thumbnails
 - **Poetry**: Dependency management
 - **pytest**: Testing framework
-
-### Contributors
-
-- 🐱 [honghanhh](https://github.com/honghanhh) 🐱
-- 🦊 [nvti](https://github.com/nvti) 🦊
-- 🐻 [Nlag](https://github.com/NLag) 🐻
-- 🐰 [DaphneeCh](https://github.com/DaphneeCh) 🐰
