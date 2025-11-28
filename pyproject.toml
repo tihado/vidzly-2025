@@ -14,8 +14,62 @@ opencv-python = "^4.12.0.88"
 moviepy = "^2.2.1"
 pillow = "11"
 python-dotenv = "^1.0.0"
+elevenlabs = "^2.24.0"
+gtts = "^2.5.0"
+langchain-google-genai = "^3.2.0"
+langchain-core = "^1.1.0"
+langchain = "^1.1.0"
 
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.1"
+black = "^24.0.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.0.1,<10.0.0)",
+    "pytest-mock (>=3.15.1,<4.0.0)",
+    "pytest-cov (>=7.0.0,<8.0.0)",
+    "black (>=24.0.0,<25.0.0)",
+    "lefthook (>=2.0.4,<3.0.0)"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
