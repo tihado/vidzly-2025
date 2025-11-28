@@ -360,6 +360,21 @@ with gr.Blocks() as demo:
                 api_name="subtitle_creator",
             )
 
+    with gr.Tab("MCP Guide"):
+        # Read and display the MCP guide
+        # Calculate path to project root (app.py is in src/app/)
+        current_dir = os.path.dirname(os.path.abspath(__file__))  # src/app/
+        project_root = os.path.dirname(os.path.dirname(current_dir))  # project root
+        mcp_guide_path = os.path.join(project_root, "MCPGUIDE.md")
+
+        try:
+            with open(mcp_guide_path, "r", encoding="utf-8") as f:
+                mcp_guide_content = f.read()
+        except FileNotFoundError:
+            mcp_guide_content = "# MCP Configuration Guide\n\nGuide file not found. Please check the MCPGUIDE.md file in the project root."
+
+        gr.Markdown(mcp_guide_content)
+
 
 if __name__ == "__main__":
     demo.launch(mcp_server=True, share=True, server_name="0.0.0.0", server_port=7860)

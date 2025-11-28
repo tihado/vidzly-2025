@@ -51,12 +51,12 @@ Vidzly is an intelligent automation platform that revolutionizes short-form vide
 
 1. **Upload Your Raw Footage** - Drop your clips through the Gradio web interface
 2. **Describe Your Vision** - Optionally provide a description of the mood, style, or vibe you want
-3. **AI-Powered Sequential Processing** - Our workflow intelligently processes your videos step by step:
-   - **Video Analysis**: Analyzes videos to understand content, mood, and key moments
-   - **Script Generation**: Creates composition scripts with scene sequences and transitions
-   - **Music Generation**: Generates background music matching the video mood
-   - **Thumbnail Creation**: Extracts frames and generates engaging thumbnails
-   - **Video Composition**: Combines everything into a polished final video
+3. **AI-Powered Parallel Processing** - Our optimized workflow processes your videos efficiently using parallel execution:
+   - **Parallel Video Analysis**: All videos are analyzed concurrently using Google Gemini AI to understand content, mood, and key moments
+   - **Script Generation**: Creates intelligent composition scripts with scene sequences, transitions, and timing
+   - **Parallel Asset Creation**: Music generation and frame extraction run simultaneously to save time
+   - **Thumbnail Generation**: Creates engaging thumbnails with AI-generated text and stickers
+   - **Video Composition**: Combines clips, music, and thumbnail into a polished final video with smooth transitions
 4. **Get Your Masterpiece** - Receive a polished video with thumbnail overlay on the first frame
 
 ## 🛠️ Available Tools
@@ -73,15 +73,14 @@ Vidzly provides a comprehensive suite of MCP tools accessible through a Gradio w
 ## 🏗️ Architecture
 
 - **Web Interface**: Built with Gradio (with MCP server support)
-- **Workflow Engine**: Sequential tool orchestration that processes videos step-by-step:
-  - Video analysis and summarization
-  - Script generation with scene planning
-  - Music generation based on mood
-  - Frame extraction and thumbnail creation
-  - Final video composition
-- **AI Integration**: Google Gemini for video understanding, analysis, and script generation
+- **Parallel Workflow Engine**: Optimized tool orchestration with parallel execution for maximum performance:
+  - **Concurrent Video Analysis**: Multiple videos analyzed simultaneously using ThreadPoolExecutor
+  - **Intelligent Script Generation**: AI-powered scene planning with automatic timestamp validation
+  - **Parallel Asset Creation**: Music generation and frame extraction run concurrently
+  - **Smart Video Composition**: Validates and corrects timestamps, handles transitions, and ensures accurate durations
+- **AI Integration**: Google Gemini for video understanding, analysis, script generation, and thumbnail creation
 - **Audio Generation**: ElevenLabs API for music and sound effect generation
-- **Video Processing**: MoviePy for video editing and composition
+- **Video Processing**: MoviePy for video editing, clipping, and composition with duration validation
 - **Image Processing**: OpenCV and Pillow for frame extraction and thumbnail generation
 - **Testing**: Comprehensive pytest test suite with unit and integration tests
 
