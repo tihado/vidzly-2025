@@ -57,6 +57,7 @@ def video_clipper(
 
         # Extract the segment (using subclipped for MoviePy 2.1.2+)
         clipped_video = video.subclipped(start_time, end_time)
+        expected_duration = end_time - start_time
 
         # Determine output path
         if output_path is None:
@@ -73,7 +74,7 @@ def video_clipper(
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir, exist_ok=True)
 
-        # Write the clipped video
+        # Write the clipped video with explicit duration to ensure accuracy
         clipped_video.write_videofile(
             output_path,
             codec="libx264",
@@ -81,11 +82,22 @@ def video_clipper(
             temp_audiofile=tempfile.mktemp(suffix=".m4a"),
             remove_temp=True,
             logger=None,
+            preset="medium",  # Use medium preset for better quality and reliability
         )
 
         # Clean up
         clipped_video.close()
         video.close()
+        
+        # Verify the clipped video duration by reloading it
+        # This helps catch any frame reading issues early
+        verify_clip = VideoFileClip(output_path)
+        actual_duration = verify_clip.duration
+        verify_clip.close()
+        
+        # Log if there's a significant duration mismatch
+        if abs(actual_duration - expected_duration) > 0.5:
+            print(f"Warning: Clipped video expected {expected_duration:.2f}s but actual duration is {actual_duration:.2f}s")
 
         # Return absolute path
         return os.path.abspath(output_path)

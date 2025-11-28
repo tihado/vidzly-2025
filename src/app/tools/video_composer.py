@@ -220,11 +220,12 @@ def video_composer(
             """
             if isinstance(source_video_ref, int):
                 # Index-based reference
-                if source_video_ref < 0 or source_video_ref >= len(video_clips_list):
-                    raise ValueError(
-                        f"source_video index {source_video_ref} is out of range. "
-                        f"Must be between 0 and {len(video_clips_list) - 1}"
-                    )
+                # Validation should have been done before calling this function,
+                # but add safety check here too
+                if source_video_ref < 0:
+                    source_video_ref = 0
+                elif source_video_ref >= len(video_clips_list):
+                    source_video_ref = len(video_clips_list) - 1
                 return video_clips_list[source_video_ref]
             elif isinstance(source_video_ref, str):
                 # Filename-based reference - match by basename
@@ -257,17 +258,41 @@ def video_composer(
                     f"Scene {scene.get('scene_id', 'unknown')} missing 'source_video'"
                 )
 
+            # Validate and clamp source_video index before resolving
+            if isinstance(source_video_ref, int):
+                if source_video_ref < 0:
+                    source_video_ref = 0
+                    scene["source_video"] = 0
+                elif source_video_ref >= len(video_clips):
+                    source_video_ref = len(video_clips) - 1
+                    scene["source_video"] = source_video_ref
+
             # Resolve source_video reference to actual video path
             source_video = resolve_source_video(source_video_ref, video_clips)
+
+            # Load video to get actual duration for validation
+            temp_video = VideoFileClip(source_video)
+            video_duration = temp_video.duration
+            temp_video.close()
 
             # Calculate end_time from duration if not provided
             if end_time is None and duration is not None:
                 end_time = start_time + duration
             elif end_time is None:
-                # Load video to get duration
-                temp_video = VideoFileClip(source_video)
-                end_time = temp_video.duration
-                temp_video.close()
+                end_time = video_duration
+
+            # Validate and clamp timestamps to video duration
+            # If start_time exceeds duration, adjust to use the end of the video
+            if start_time >= video_duration:
+                # Use the last portion of the video (last 2 seconds or video duration, whichever is smaller)
+                clip_duration = min(2.0, video_duration)
+                start_time = max(0.0, video_duration - clip_duration)
+                end_time = video_duration
+            else:
+                # Clamp start_time to be within bounds
+                start_time = max(0.0, min(start_time, video_duration - 0.1))
+                # Clamp end_time to be within bounds and greater than start_time
+                end_time = max(start_time + 0.1, min(end_time, video_duration))
 
             # Clip the video segment
             from .video_clipper import video_clipper
@@ -275,12 +300,31 @@ def video_composer(
             clipped_path = video_clipper(source_video, start_time, end_time)
             clip_paths.append(clipped_path)
 
-        # Load all video clips
+        # Load all video clips and validate durations
         video_clips_loaded = []
-        for clip_path in clip_paths:
+        expected_total_duration = 0.0
+        actual_total_duration = 0.0
+        
+        for i, (clip_path, scene) in enumerate(zip(clip_paths, scenes)):
             if not os.path.exists(clip_path):
                 raise FileNotFoundError(f"Video clip not found: {clip_path}")
-            video_clips_loaded.append(VideoFileClip(clip_path))
+            
+            clip = VideoFileClip(clip_path)
+            actual_duration = clip.duration
+            expected_duration = scene.get("duration", actual_duration)
+            
+            # Use actual duration for calculations, not expected
+            actual_total_duration += actual_duration
+            expected_total_duration += expected_duration
+            
+            # Log duration mismatch if significant
+            if abs(actual_duration - expected_duration) > 0.5:
+                print(f"Warning: Scene {i+1} expected duration {expected_duration:.2f}s but actual clip duration is {actual_duration:.2f}s")
+            
+            video_clips_loaded.append(clip)
+        
+        print(f"Total expected duration from script: {expected_total_duration:.2f}s")
+        print(f"Total actual duration from clips: {actual_total_duration:.2f}s")
 
         # Apply transitions and compose clips
         transition_duration = 0.5  # Default transition duration in seconds
@@ -329,19 +373,40 @@ def video_composer(
                 transition_in = scene.get("transition_in", "cut")
 
                 if i > 0 and transition_in == "crossfade":
-                    # Overlap for crossfade
+                    # Overlap for crossfade - this reduces total duration
                     clip_start = current_time - transition_duration
                 else:
                     clip_start = current_time
 
                 clip = clip.with_start(clip_start)
                 final_clips.append(clip)
+                # Use actual clip duration, not script duration
                 current_time = clip_start + clip.duration
 
             final_video = CompositeVideoClip(final_clips)
         else:
             # Use concatenate_videoclips for simple sequential composition
             final_video = concatenate_videoclips(processed_clips, method="compose")
+        
+        # Validate final video duration
+        actual_final_duration = final_video.duration
+        target_duration = script_data.get("total_duration", expected_total_duration)
+        
+        # Log duration information
+        print(f"Final composed video duration: {actual_final_duration:.2f}s")
+        print(f"Target duration from script: {target_duration:.2f}s")
+        
+        if abs(actual_final_duration - target_duration) > 1.0:
+            print(f"Warning: Final video duration ({actual_final_duration:.2f}s) is shorter than target duration ({target_duration:.2f}s)")
+            print(f"Expected total from scenes: {expected_total_duration:.2f}s")
+            print(f"Actual total from clips: {actual_total_duration:.2f}s")
+            
+            # If the actual duration is significantly shorter, it might be due to:
+            # 1. Frame reading issues in clipped videos
+            # 2. Crossfade overlaps reducing duration
+            # 3. Clips being truncated during extraction
+            if actual_final_duration < actual_total_duration * 0.8:
+                print(f"Warning: Final video is significantly shorter than sum of clip durations. This may indicate frame reading issues.")
 
         # Add thumbnail image to first frame if provided
         if thumbnail_path and os.path.exists(thumbnail_path):

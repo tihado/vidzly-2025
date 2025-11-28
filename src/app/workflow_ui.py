@@ -45,11 +45,11 @@ def workflow_ui():
         # Header
         gr.Markdown(
             """
-            # 🤖 Vidzly - AI Agent Workflow
+            # 🎬 Vidzly - Video Creation Workflow
             
-            Transform your raw footage into a polished video with AI agent-powered editing.
-            Our intelligent agent uses MCP tools to analyze, plan, and create your video automatically.
-            Upload your videos, describe your vision, and let the AI agent handle the rest!
+            Transform your raw footage into a polished video with AI-powered editing.
+            Our workflow uses advanced AI tools to analyze, plan, and create your video automatically.
+            Upload your videos, describe your vision, and let the AI handle the rest!
             """
         )
 

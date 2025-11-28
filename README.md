@@ -1,6 +1,6 @@
 ---
 title: Vidzly
-short_description: Transform raw footage into viral-ready content in seconds. No skills required. No expensive gear needed. Just your vision and our AI.
+short_description: Transform raw footage into viral-ready content in seconds.
 thumbnail: https://cdn.tihado.com/app.png
 emoji: 🎬
 colorFrom: blue
@@ -51,9 +51,12 @@ Vidzly is an intelligent automation platform that revolutionizes short-form vide
 
 1. **Upload Your Raw Footage** - Drop your clips through the Gradio web interface
 2. **Describe Your Vision** - Optionally provide a description of the mood, style, or vibe you want
-3. **AI Agents Work Their Magic** - Our two-agent system intelligently plans and executes:
-   - **Script Writer/Director Agent**: Analyzes videos, creates composition scripts, and generates music
-   - **Video Editor Agent**: Executes video composition, extracts frames, and generates thumbnails
+3. **AI-Powered Sequential Processing** - Our workflow intelligently processes your videos step by step:
+   - **Video Analysis**: Analyzes videos to understand content, mood, and key moments
+   - **Script Generation**: Creates composition scripts with scene sequences and transitions
+   - **Music Generation**: Generates background music matching the video mood
+   - **Thumbnail Creation**: Extracts frames and generates engaging thumbnails
+   - **Video Composition**: Combines everything into a polished final video
 4. **Get Your Masterpiece** - Receive a polished video with thumbnail overlay on the first frame
 
 ## 🛠️ Available Tools
@@ -70,9 +73,12 @@ Vidzly provides a comprehensive suite of MCP tools accessible through a Gradio w
 ## 🏗️ Architecture
 
 - **Web Interface**: Built with Gradio (with MCP server support)
-- **AI Agents**: Google ADK (Agent Development Kit) with two specialized agents:
-  - **Script Writer/Director Agent**: Plans video composition using video analysis and script generation
-  - **Video Editor Agent**: Executes video composition, frame extraction, and thumbnail generation
+- **Workflow Engine**: Sequential tool orchestration that processes videos step-by-step:
+  - Video analysis and summarization
+  - Script generation with scene planning
+  - Music generation based on mood
+  - Frame extraction and thumbnail creation
+  - Final video composition
 - **AI Integration**: Google Gemini for video understanding, analysis, and script generation
 - **Audio Generation**: ElevenLabs API for music and sound effect generation
 - **Video Processing**: MoviePy for video editing and composition
@@ -198,7 +204,7 @@ GOOGLE_API_KEY=your_google_api_key
 ELEVENLABS_API_KEY=your_elevenlabs_api_key
 ```
 
-**Note**: The application requires Google ADK (Agent Development Kit) to be installed. The `google-adk` package is required for the two-agent workflow architecture.
+**Note**: The application uses Google Gemini API for AI-powered video analysis and script generation.
 
 ### Running the Application
 
@@ -249,7 +255,7 @@ poetry run pytest tests/test_video_summarizer.py
 
 - **Python 3.12+**: Core language
 - **Gradio 6.0+**: Web interface with MCP support
-- **Google ADK (Agent Development Kit)**: Two-agent architecture for intelligent workflow orchestration
+- **Sequential Workflow**: Step-by-step tool orchestration for video processing
 - **Google Gemini API**: Video understanding, analysis, script generation, and thumbnail creation
 - **ElevenLabs API**: Music and sound effect generation
 - **MoviePy 2.2.1**: Video editing, composition, and image overlay

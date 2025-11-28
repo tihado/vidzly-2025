@@ -1,24 +1,27 @@
 """
-Agent workflow for video creation using LangChain agent.
+Parallel workflow for video creation.
 
 This module implements the main workflow that orchestrates video processing
-tools to create polished videos from raw footage using a central agent.
+tools to create polished videos from raw footage using parallel tool calls
+where possible to optimize performance.
 """
 
 import os
 import json
-import re
 from typing import List, Optional, Generator, Tuple
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-# LangChain v1.0 uses create_agent instead of create_react_agent
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.agents import create_agent
-
-from tools.langchain_tools import ALL_TOOLS
+# Import tool functions directly
+from tools.video_summarizer import video_summarizer
+from tools.video_script_generator import video_script_generator
+from tools.music_selector import music_selector
+from tools.frame_extractor import frame_extractor
+from tools.thumbnail_generator import thumbnail_generator
+from tools.video_composer import video_composer
 
 
 def _normalize_video_inputs(video_inputs) -> List[str]:
@@ -59,35 +62,6 @@ def _normalize_video_inputs(video_inputs) -> List[str]:
     return normalized
 
 
-def _extract_json_from_text(text: str) -> Optional[str]:
-    """Extract JSON from text if present."""
-    if "{" in text and "}" in text:
-        start_idx = text.find("{")
-        end_idx = text.rfind("}") + 1
-        if start_idx >= 0 and end_idx > start_idx:
-            json_str = text[start_idx:end_idx]
-            try:
-                json.loads(json_str)
-                return json_str
-            except json.JSONDecodeError:
-                pass
-    return None
-
-
-def _extract_file_path_from_text(text: str, extensions: List[str]) -> Optional[str]:
-    """Extract file path from text if present."""
-    # First check if the text itself is a valid path
-    if os.path.exists(text.strip()):
-        return text.strip()
-
-    # Try to find path pattern in text
-    pattern = r"([/\\][^\s]+\.(" + "|".join(extensions) + "))"
-    match = re.search(pattern, text)
-    if match:
-        return match.group(1)
-    return None
-
-
 def agent_workflow(
     video_inputs,
     user_description: Optional[str] = None,
@@ -95,8 +69,12 @@ def agent_workflow(
     generate_music: bool = True,
 ) -> Generator[Tuple[Optional[str], str, str, str, str], None, None]:
     """
-    Main agent workflow that orchestrates video creation using a central agent.
+    Parallel workflow that orchestrates video creation using direct tool calls.
 
+    This workflow parallelizes operations where possible:
+    - Video analysis: All videos are analyzed concurrently
+    - Music generation and frame extraction: Run in parallel
+    
     This is a generator function that yields progress updates as the workflow progresses.
     Each yield contains: (final_path, summary_json, script_json, thumbnail_path, status)
 
@@ -135,216 +113,180 @@ def agent_workflow(
         status += f"✅ Found {len(video_paths)} video file(s).\n"
         yield final_path, summary_json, script_json, thumbnail_path, status
 
-        # Get API key
-        api_key = os.getenv("GOOGLE_API_KEY")
-        if not api_key:
-            status += "❌ GOOGLE_API_KEY not found in environment.\n"
+        # Step 1: Analyze videos in parallel
+        status += "\n📊 Step 1: Analyzing videos (in parallel)...\n"
+        yield final_path, summary_json, script_json, thumbnail_path, status
+
+        summaries = []
+        
+        def analyze_video(video_path, index):
+            """Helper function to analyze a single video."""
+            try:
+                summary_result = video_summarizer(video_path, fps=2.0)
+                summary_dict = json.loads(summary_result)
+                return (index, summary_dict, None)
+            except json.JSONDecodeError as e:
+                return (index, None, f"Could not parse summary: {str(e)}")
+            except Exception as e:
+                return (index, None, f"Error analyzing video: {str(e)}")
+
+        # Analyze all videos in parallel
+        with ThreadPoolExecutor(max_workers=min(len(video_paths), 5)) as executor:
+            # Submit all tasks
+            future_to_video = {
+                executor.submit(analyze_video, video_path, i): (i, video_path)
+                for i, video_path in enumerate(video_paths)
+            }
+            
+            # Process results as they complete
+            results = [None] * len(video_paths)
+            for future in as_completed(future_to_video):
+                index, summary_dict, error = future.result()
+                
+                if error:
+                    status += f"  ⚠️ Warning: Video {index+1}/{len(video_paths)} - {error}\n"
+                elif summary_dict:
+                    results[index] = summary_dict
+                    status += f"  ✅ Completed video {index+1}/{len(video_paths)}\n"
+                else:
+                    status += f"  ⚠️ Warning: Video {index+1}/{len(video_paths)} - No summary generated\n"
+                
+                yield final_path, summary_json, script_json, thumbnail_path, status
+
+        # Collect successful summaries in order
+        summaries = [r for r in results if r is not None]
+
+        if not summaries:
+            status += "❌ Failed to analyze videos.\n"
             yield final_path, summary_json, script_json, thumbnail_path, status
             return
 
-        # Create LLM
-        llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash-lite",
-            google_api_key=api_key,
-            temperature=0.7,
-        )
-
-        # Create central agent with all tools
-        status += "\n🤖 Initializing AI agent...\n"
+        summary_json = json.dumps(summaries, indent=2)
+        status += f"✅ Analyzed {len(summaries)} video(s) in parallel.\n"
         yield final_path, summary_json, script_json, thumbnail_path, status
 
-        agent = create_agent(llm, tools=ALL_TOOLS)
-
-        # Build comprehensive workflow prompt
-        video_paths_str = "\n".join([f"- {path}" for path in video_paths])
-        user_desc_text = (
-            f"\nUser Description: {user_description}" if user_description else ""
-        )
-        music_instruction = (
-            "Generate background music matching the video's mood and style."
-            if generate_music
-            else "Do not generate background music."
-        )
-
-        workflow_prompt = f"""You are a professional video editor creating short-form videos. Your task is to transform raw video footage into a polished, engaging video.
-
-WORKFLOW TASKS (execute in order):
-
-Step 1. VIDEO ANALYSIS using the video_summarizer_tool
-   - Video files to analyze:
-{video_paths_str}
-   - Use fps=2.0 for analysis
-   - Collect all video summaries
-
-Step 2. SCRIPT GENERATION using the video_script_generator_tool
-   - Target duration: {target_duration} seconds
-   - The script should include:
-     * Scene sequences with source video references and timestamps
-     * Transitions (cut, fade, crossfade)
-     * Music configuration with mood and style
-     * Pacing and narrative structure
-{user_desc_text}
-
-Step 3. BACKGROUND MUSIC GENERATION (if enabled) using the music_selector_tool:
-   - {music_instruction}
-   - Extract mood from the script or video summaries
-   - Target duration: {target_duration} seconds
-
-Step 4. FRAME EXTRACTION using the frame_extractor_tool
-   - Extract a representative frame from the first video
-   - Use the thumbnail_timeframe from the first video's summary if available
-
-Step 5. THUMBNAIL GENERATION using thumbnail_generator_tool
-   - Use the extracted frame and video summary
-
-Step 6. VIDEO COMPOSITION using the video_composer_tool
-   - Provide the script JSON, video clips, music (if generated), and thumbnail
-   - The video_clips parameter should be a JSON array of video file paths
-
-IMPORTANT INSTRUCTIONS:
-- Execute all steps in sequence
-- Use the tools to accomplish each task
-- Extract and preserve JSON outputs (scripts, summaries) for the final result
-- Extract file paths from tool outputs (music, thumbnail, final video)
-- Think step by step and use the appropriate tools for each task
-- Do not skip any steps
-- Report progress as you complete each step
-
-Begin by analyzing the videos."""
-
-        status += "\n🎬 Starting video creation workflow...\n"
+        # Step 2: Generate script
+        status += "\n📝 Step 2: Generating video script...\n"
         yield final_path, summary_json, script_json, thumbnail_path, status
 
-        # Stream agent execution for real-time updates
-        status += "🤖 Agent is working...\n"
+        script_json = video_script_generator(
+            video_summaries=summary_json,
+            user_description=user_description,
+            target_duration=target_duration,
+        )
+        status += "✅ Script generated.\n"
         yield final_path, summary_json, script_json, thumbnail_path, status
 
-        # Invoke agent and stream results
-        result = agent.invoke(
-            {"messages": [{"role": "user", "content": workflow_prompt}]}
-        )
+        # Parse script to extract music mood
+        try:
+            script_data = json.loads(script_json)
+            music_mood = None
+            if script_data.get("music") and isinstance(script_data["music"], dict):
+                music_mood = script_data["music"].get("mood", "energetic")
+            else:
+                # Fallback: extract mood from first video summary
+                if summaries and summaries[0].get("mood_tags"):
+                    music_mood = summaries[0]["mood_tags"][0] if summaries[0]["mood_tags"] else "energetic"
+                else:
+                    music_mood = "energetic"
+        except:
+            music_mood = "energetic"
 
-        print(result)
+        # Step 3 & 4: Generate music and extract frame in parallel
+        status += "\n🎵 Step 3 & 4: Generating music and extracting frame (in parallel)...\n"
+        yield final_path, summary_json, script_json, thumbnail_path, status
 
-        # Process agent result to extract outputs
-        if result and "messages" in result:
-            # Track tool outputs
-            summaries = []
-            music_path = None
+        music_path = None
+        frame_path = None
+        first_video_path = video_paths[0]
+        thumbnail_timeframe = None
+        if summaries and summaries[0].get("thumbnail_timeframe"):
+            thumbnail_timeframe = summaries[0]["thumbnail_timeframe"]
 
-            # Extract information from all messages (including tool messages)
-            for message in result["messages"]:
-                # Check if this is a tool message (contains tool output)
-                message_type = (
-                    getattr(message, "type", None) if hasattr(message, "type") else None
+        def generate_music_task():
+            """Helper function to generate music."""
+            try:
+                path = music_selector(
+                    mood=music_mood,
+                    target_duration=target_duration,
+                    looping=True,
+                    prompt_influence=0.3,
                 )
-                content = (
-                    message.content if hasattr(message, "content") else str(message)
+                return path, None
+            except Exception as e:
+                return None, str(e)
+
+        def extract_frame_task():
+            """Helper function to extract frame."""
+            try:
+                path = frame_extractor(
+                    first_video_path, thumbnail_timeframe=thumbnail_timeframe
                 )
+                return path, None
+            except Exception as e:
+                return None, str(e)
 
-                # Update status with agent's progress
-                if content:
-                    # Check for tool outputs - video_summarizer returns JSON
-                    if (
-                        "video_summarizer" in str(message).lower()
-                        or "summary" in content.lower()
-                    ):
-                        extracted_json = _extract_json_from_text(content)
-                        if extracted_json:
-                            try:
-                                parsed = json.loads(extracted_json)
-                                if isinstance(parsed, list):
-                                    summaries.extend(parsed)
-                                elif isinstance(parsed, dict) and "summary" in parsed:
-                                    summaries.append(parsed)
-                            except:
-                                pass
+        # Run music generation and frame extraction in parallel
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = {}
+            if generate_music:
+                futures["music"] = executor.submit(generate_music_task)
+            futures["frame"] = executor.submit(extract_frame_task)
 
-                    # Check for script output
-                    if "script" in content.lower() or "scenes" in content:
-                        extracted_json = _extract_json_from_text(content)
-                        if extracted_json:
-                            try:
-                                parsed = json.loads(extracted_json)
-                                if "scenes" in parsed:
-                                    script_json = extracted_json
-                                    status += "✅ Script generated.\n"
-                                    yield final_path, summary_json, script_json, thumbnail_path, status
-                            except:
-                                pass
-
-                    # Check for music file path
-                    if "music" in content.lower() or "sound" in content.lower():
-                        music_path = _extract_file_path_from_text(
-                            content, ["mp3", "wav", "m4a"]
-                        )
-                        if music_path and os.path.exists(music_path):
-                            status += f"✅ Music generated.\n"
-                            yield final_path, summary_json, script_json, thumbnail_path, status
-
-                    # Check for thumbnail file path
-                    if "thumbnail" in content.lower() or "frame" in content.lower():
-                        thumb_path = _extract_file_path_from_text(
-                            content, ["png", "jpg", "jpeg"]
-                        )
-                        if thumb_path and os.path.exists(thumb_path):
-                            thumbnail_path = thumb_path
-                            status += f"✅ Thumbnail generated.\n"
-                            yield final_path, summary_json, script_json, thumbnail_path, status
-
-                    # Check for final video path
-                    if (
-                        "compose" in content.lower()
-                        or "final" in content.lower()
-                        or "video" in content.lower()
-                    ):
-                        video_path = _extract_file_path_from_text(
-                            content, ["mp4", "avi", "mov"]
-                        )
-                        if video_path and os.path.exists(video_path):
-                            final_path = video_path
-                            status += f"✅ Final video created.\n"
-                            yield final_path, summary_json, script_json, thumbnail_path, status
-
-            # Compile summaries if collected
-            if summaries:
-                summary_json = json.dumps(summaries, indent=2)
-                status += f"✅ Analyzed {len(summaries)} video(s).\n"
+            # Wait for both to complete
+            for task_name, future in futures.items():
+                result, error = future.result()
+                if task_name == "music":
+                    if error:
+                        status += f"⚠️ Warning: Music generation failed: {error}\n"
+                    elif result:
+                        music_path = result
+                        status += "✅ Music generated.\n"
+                elif task_name == "frame":
+                    if error:
+                        status += f"❌ Frame extraction failed: {error}\n"
+                        yield final_path, summary_json, script_json, thumbnail_path, status
+                        return
+                    elif result:
+                        frame_path = result
+                        status += "✅ Frame extracted.\n"
+                
                 yield final_path, summary_json, script_json, thumbnail_path, status
 
-            # Final extraction from last message as fallback
-            if result["messages"]:
-                last_message = result["messages"][-1]
-                final_content = (
-                    last_message.content
-                    if hasattr(last_message, "content")
-                    else str(last_message)
-                )
+        # Step 5: Generate thumbnail
+        status += "\n🎨 Step 5: Generating thumbnail...\n"
+        yield final_path, summary_json, script_json, thumbnail_path, status
 
-                # Final attempt to extract missing outputs
-                if not script_json:
-                    script_json = _extract_json_from_text(final_content) or ""
+        try:
+            video_summary_text = summaries[0].get("summary", "") if summaries else ""
+            thumbnail_path = thumbnail_generator(frame_path, video_summary_text)
+            status += "✅ Thumbnail generated.\n"
+            yield final_path, summary_json, script_json, thumbnail_path, status
+        except Exception as e:
+            status += f"❌ Thumbnail generation failed: {str(e)}\n"
+            yield final_path, summary_json, script_json, thumbnail_path, status
+            return
 
-                if not summary_json:
-                    summary_json = _extract_json_from_text(final_content) or ""
+        # Step 6: Compose final video
+        status += "\n🎬 Step 6: Composing final video...\n"
+        yield final_path, summary_json, script_json, thumbnail_path, status
 
-                if not thumbnail_path:
-                    thumbnail_path = _extract_file_path_from_text(
-                        final_content, ["png", "jpg", "jpeg"]
-                    )
-
-                if not final_path:
-                    final_path = _extract_file_path_from_text(
-                        final_content, ["mp4", "avi", "mov"]
-                    )
+        try:
+            final_path = video_composer(
+                script=script_json,
+                video_clips=video_paths,
+                music_path=music_path,
+                thumbnail_image=thumbnail_path,
+            )
+            status += "✅ Final video created.\n"
+            yield final_path, summary_json, script_json, thumbnail_path, status
+        except Exception as e:
+            status += f"❌ Video composition failed: {str(e)}\n"
+            yield final_path, summary_json, script_json, thumbnail_path, status
+            return
 
         # Final status update
-        if final_path:
-            status += "\n✅ Video creation complete! 🎉\n"
-        else:
-            status += "\n⚠️ Workflow completed, but final video path not found.\n"
-            status += "Check agent output for details.\n"
-
+        status += "\n✅ Video creation complete! 🎉\n"
         yield final_path, summary_json, script_json, thumbnail_path, status
 
     except Exception as e:

@@ -335,6 +335,8 @@ Return ONLY a valid JSON object with this exact structure:
 Rules:
 - source_video is 0-based index (0 for first video, 1 for second, etc.)
 - Each scene must have start_time, end_time, and duration
+- CRITICAL: start_time and end_time MUST be within the actual video duration. Check the "duration" field in each video summary to ensure timestamps don't exceed it.
+- For example, if a video has duration 5.2 seconds, start_time must be < 5.2 and end_time must be <= 5.2
 - Total of all scene durations should be approximately {target_duration} seconds (±2 seconds tolerance)
 - Use transitions: "cut", "fade", or "crossfade"
 - Extract mood tags from the video summaries for the music section
@@ -374,6 +376,73 @@ Rules:
 
         if not isinstance(script["scenes"], list) or len(script["scenes"]) == 0:
             raise ValueError("Generated script must contain at least one scene")
+
+        # Validate and fix scene timestamps to ensure they're within video durations
+        # Create a mapping of video index to duration from summaries
+        video_durations = {}
+        for i, summary in enumerate(summaries_list):
+            video_durations[i] = summary.get("duration", 0.0)
+        
+        num_videos = len(summaries_list)
+
+        # Validate and fix each scene
+        for scene in script["scenes"]:
+            source_video_idx = scene.get("source_video")
+            
+            # Validate and fix source_video index if it's an integer
+            if isinstance(source_video_idx, int):
+                # Clamp index to valid range (0 to num_videos - 1)
+                if source_video_idx < 0:
+                    source_video_idx = 0
+                elif source_video_idx >= num_videos:
+                    # Clamp to last valid index
+                    source_video_idx = max(0, num_videos - 1)
+                scene["source_video"] = source_video_idx
+            elif source_video_idx is None:
+                # If source_video is missing, default to first video
+                scene["source_video"] = 0
+            
+            # Now validate timestamps if we have a valid video index
+            # Use the clamped value from scene (in case it was updated)
+            validated_idx = scene.get("source_video")
+            if isinstance(validated_idx, int) and validated_idx in video_durations:
+                video_duration = video_durations[validated_idx]
+                start_time = scene.get("start_time", 0.0)
+                end_time = scene.get("end_time")
+                scene_duration = scene.get("duration")
+
+                # If start_time exceeds video duration, adjust it
+                if start_time >= video_duration:
+                    # Use the last portion of the video (last 2 seconds or video duration, whichever is smaller)
+                    clip_duration = min(2.0, video_duration)
+                    scene["start_time"] = max(0.0, video_duration - clip_duration)
+                    if end_time is None and scene_duration:
+                        scene["end_time"] = video_duration
+                        scene["duration"] = video_duration - scene["start_time"]
+                    elif end_time:
+                        scene["end_time"] = video_duration
+                        scene["duration"] = video_duration - scene["start_time"]
+                    else:
+                        scene["end_time"] = video_duration
+                        scene["duration"] = video_duration - scene["start_time"]
+                else:
+                    # Clamp start_time to be within bounds
+                    scene["start_time"] = max(0.0, min(start_time, video_duration - 0.1))
+                    
+                    # Calculate or validate end_time
+                    if end_time is None:
+                        if scene_duration:
+                            calculated_end_time = scene["start_time"] + scene_duration
+                        else:
+                            calculated_end_time = video_duration
+                    else:
+                        calculated_end_time = end_time
+                    
+                    # Clamp end_time to be within bounds
+                    scene["end_time"] = max(scene["start_time"] + 0.1, min(calculated_end_time, video_duration))
+                    
+                    # Update duration to match
+                    scene["duration"] = scene["end_time"] - scene["start_time"]
 
         # Validate scene durations sum to approximately target_duration
         total_scene_duration = sum(
