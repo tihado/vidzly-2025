@@ -206,7 +206,10 @@ def video_script_generator(
                     # Check if it's wrapped in a tool response format
                     if len(summary) == 1:
                         key = list(summary.keys())[0]
-                        if "_tool_response" in key.lower() or "_response" in key.lower():
+                        if (
+                            "_tool_response" in key.lower()
+                            or "_response" in key.lower()
+                        ):
                             # Extract the actual data from the wrapper
                             summaries_list.append(summary[key])
                         else:
@@ -382,13 +385,13 @@ Rules:
         video_durations = {}
         for i, summary in enumerate(summaries_list):
             video_durations[i] = summary.get("duration", 0.0)
-        
+
         num_videos = len(summaries_list)
 
         # Validate and fix each scene
         for scene in script["scenes"]:
             source_video_idx = scene.get("source_video")
-            
+
             # Validate and fix source_video index if it's an integer
             if isinstance(source_video_idx, int):
                 # Clamp index to valid range (0 to num_videos - 1)
@@ -401,7 +404,7 @@ Rules:
             elif source_video_idx is None:
                 # If source_video is missing, default to first video
                 scene["source_video"] = 0
-            
+
             # Now validate timestamps if we have a valid video index
             # Use the clamped value from scene (in case it was updated)
             validated_idx = scene.get("source_video")
@@ -427,8 +430,10 @@ Rules:
                         scene["duration"] = video_duration - scene["start_time"]
                 else:
                     # Clamp start_time to be within bounds
-                    scene["start_time"] = max(0.0, min(start_time, video_duration - 0.1))
-                    
+                    scene["start_time"] = max(
+                        0.0, min(start_time, video_duration - 0.1)
+                    )
+
                     # Calculate or validate end_time
                     if end_time is None:
                         if scene_duration:
@@ -437,10 +442,13 @@ Rules:
                             calculated_end_time = video_duration
                     else:
                         calculated_end_time = end_time
-                    
+
                     # Clamp end_time to be within bounds
-                    scene["end_time"] = max(scene["start_time"] + 0.1, min(calculated_end_time, video_duration))
-                    
+                    scene["end_time"] = max(
+                        scene["start_time"] + 0.1,
+                        min(calculated_end_time, video_duration),
+                    )
+
                     # Update duration to match
                     scene["duration"] = scene["end_time"] - scene["start_time"]
 

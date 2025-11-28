@@ -304,25 +304,27 @@ def video_composer(
         video_clips_loaded = []
         expected_total_duration = 0.0
         actual_total_duration = 0.0
-        
+
         for i, (clip_path, scene) in enumerate(zip(clip_paths, scenes)):
             if not os.path.exists(clip_path):
                 raise FileNotFoundError(f"Video clip not found: {clip_path}")
-            
+
             clip = VideoFileClip(clip_path)
             actual_duration = clip.duration
             expected_duration = scene.get("duration", actual_duration)
-            
+
             # Use actual duration for calculations, not expected
             actual_total_duration += actual_duration
             expected_total_duration += expected_duration
-            
+
             # Log duration mismatch if significant
             if abs(actual_duration - expected_duration) > 0.5:
-                print(f"Warning: Scene {i+1} expected duration {expected_duration:.2f}s but actual clip duration is {actual_duration:.2f}s")
-            
+                print(
+                    f"Warning: Scene {i+1} expected duration {expected_duration:.2f}s but actual clip duration is {actual_duration:.2f}s"
+                )
+
             video_clips_loaded.append(clip)
-        
+
         print(f"Total expected duration from script: {expected_total_duration:.2f}s")
         print(f"Total actual duration from clips: {actual_total_duration:.2f}s")
 
@@ -387,26 +389,30 @@ def video_composer(
         else:
             # Use concatenate_videoclips for simple sequential composition
             final_video = concatenate_videoclips(processed_clips, method="compose")
-        
+
         # Validate final video duration
         actual_final_duration = final_video.duration
         target_duration = script_data.get("total_duration", expected_total_duration)
-        
+
         # Log duration information
         print(f"Final composed video duration: {actual_final_duration:.2f}s")
         print(f"Target duration from script: {target_duration:.2f}s")
-        
+
         if abs(actual_final_duration - target_duration) > 1.0:
-            print(f"Warning: Final video duration ({actual_final_duration:.2f}s) is shorter than target duration ({target_duration:.2f}s)")
+            print(
+                f"Warning: Final video duration ({actual_final_duration:.2f}s) is shorter than target duration ({target_duration:.2f}s)"
+            )
             print(f"Expected total from scenes: {expected_total_duration:.2f}s")
             print(f"Actual total from clips: {actual_total_duration:.2f}s")
-            
+
             # If the actual duration is significantly shorter, it might be due to:
             # 1. Frame reading issues in clipped videos
             # 2. Crossfade overlaps reducing duration
             # 3. Clips being truncated during extraction
             if actual_final_duration < actual_total_duration * 0.8:
-                print(f"Warning: Final video is significantly shorter than sum of clip durations. This may indicate frame reading issues.")
+                print(
+                    f"Warning: Final video is significantly shorter than sum of clip durations. This may indicate frame reading issues."
+                )
 
         # Add thumbnail image to first frame if provided
         if thumbnail_path and os.path.exists(thumbnail_path):

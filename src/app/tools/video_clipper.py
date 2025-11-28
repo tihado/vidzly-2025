@@ -88,16 +88,18 @@ def video_clipper(
         # Clean up
         clipped_video.close()
         video.close()
-        
+
         # Verify the clipped video duration by reloading it
         # This helps catch any frame reading issues early
         verify_clip = VideoFileClip(output_path)
         actual_duration = verify_clip.duration
         verify_clip.close()
-        
+
         # Log if there's a significant duration mismatch
         if abs(actual_duration - expected_duration) > 0.5:
-            print(f"Warning: Clipped video expected {expected_duration:.2f}s but actual duration is {actual_duration:.2f}s")
+            print(
+                f"Warning: Clipped video expected {expected_duration:.2f}s but actual duration is {actual_duration:.2f}s"
+            )
 
         # Return absolute path
         return os.path.abspath(output_path)

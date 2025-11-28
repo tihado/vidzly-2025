@@ -36,7 +36,9 @@ _VIDEO_PATH_REGISTRY: List[str] = []
 def register_video_paths(paths: List[str]) -> None:
     """Register valid video paths for path resolution."""
     global _VIDEO_PATH_REGISTRY
-    _VIDEO_PATH_REGISTRY = [os.path.abspath(p) for p in paths if p and os.path.exists(p)]
+    _VIDEO_PATH_REGISTRY = [
+        os.path.abspath(p) for p in paths if p and os.path.exists(p)
+    ]
 
 
 def _resolve_video_path(video_path: str) -> Optional[str]:
@@ -48,16 +50,16 @@ def _resolve_video_path(video_path: str) -> Optional[str]:
     """
     # Clean the path
     video_path = video_path.strip()
-    
+
     # Try direct path first
     if os.path.exists(video_path):
         return os.path.abspath(video_path)
-    
+
     # Try absolute path conversion
     abs_path = os.path.abspath(video_path)
     if os.path.exists(abs_path):
         return abs_path
-    
+
     # Try to find matching path in registry by filename
     if _VIDEO_PATH_REGISTRY:
         filename = os.path.basename(video_path)
@@ -65,7 +67,7 @@ def _resolve_video_path(video_path: str) -> Optional[str]:
             if os.path.basename(registered_path) == filename:
                 if os.path.exists(registered_path):
                     return registered_path
-        
+
         # Try fuzzy matching - check if the path is similar to any registered path
         # This handles cases where the path got corrupted (e.g., missing characters)
         for registered_path in _VIDEO_PATH_REGISTRY:
@@ -74,7 +76,7 @@ def _resolve_video_path(video_path: str) -> Optional[str]:
             if filename in registered_path or registered_path.endswith(filename):
                 if os.path.exists(registered_path):
                     return registered_path
-    
+
     return None
 
 
@@ -107,7 +109,7 @@ def video_summarizer_tool(video_path: str, fps: float = 2.0) -> str:
     else:
         # If resolution failed, try the original path anyway
         result_json = video_summarizer(video_path, fps=fps)
-    
+
     # Validate and ensure the result matches VideoSummary schema
     try:
         parsed = json.loads(result_json)
@@ -147,8 +149,10 @@ def video_script_generator_tool(
     Returns:
         JSON string containing detailed script with scene information and composition details matching VideoScript schema
     """
-    result_json = video_script_generator(video_summaries, user_description, target_duration)
-    
+    result_json = video_script_generator(
+        video_summaries, user_description, target_duration
+    )
+
     # Validate and ensure the result matches VideoScript schema
     try:
         parsed = json.loads(result_json)
@@ -197,7 +201,7 @@ def music_selector_tool(
         looping=looping,
         prompt_influence=prompt_influence,
     )
-    
+
     # Return as JSON string matching MusicSelectorResult schema
     result = MusicSelectorResult(audio_path=audio_path)
     return result.model_dump_json()
@@ -226,11 +230,15 @@ def frame_extractor_tool(
     # Try to resolve the path in case it got corrupted
     resolved_path = _resolve_video_path(video_path)
     if resolved_path:
-        frame_path = frame_extractor(resolved_path, thumbnail_timeframe=thumbnail_timeframe)
+        frame_path = frame_extractor(
+            resolved_path, thumbnail_timeframe=thumbnail_timeframe
+        )
     else:
         # If resolution failed, try the original path anyway
-        frame_path = frame_extractor(video_path, thumbnail_timeframe=thumbnail_timeframe)
-    
+        frame_path = frame_extractor(
+            video_path, thumbnail_timeframe=thumbnail_timeframe
+        )
+
     # Return as JSON string matching FrameExtractorResult schema
     result = FrameExtractorResult(frame_path=frame_path)
     return result.model_dump_json()
@@ -255,7 +263,7 @@ def thumbnail_generator_tool(image_path: str, summary: str) -> str:
         JSON string with thumbnail_path field matching ThumbnailGeneratorResult schema
     """
     thumbnail_path = thumbnail_generator(image_path, summary)
-    
+
     # Return as JSON string matching ThumbnailGeneratorResult schema
     result = ThumbnailGeneratorResult(thumbnail_path=thumbnail_path)
     return result.model_dump_json()
@@ -293,7 +301,7 @@ def video_composer_tool(
     else:
         # Comma-separated paths
         clips_list = [path.strip() for path in video_clips.split(",") if path.strip()]
-    
+
     # Resolve all video clip paths in case they got corrupted
     resolved_clips = []
     for clip_path in clips_list:
@@ -310,7 +318,7 @@ def video_composer_tool(
         music_path=music_path,
         thumbnail_image=thumbnail_image,
     )
-    
+
     # Return as JSON string matching VideoComposerResult schema
     result = VideoComposerResult(video_path=video_path)
     return result.model_dump_json()

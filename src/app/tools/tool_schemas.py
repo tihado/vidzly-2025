@@ -41,7 +41,9 @@ class VideoSummary(BaseModel):
 class VideoScript(BaseModel):
     """Schema for video script generator tool output."""
 
-    total_duration: float = Field(..., description="Total duration of the script in seconds")
+    total_duration: float = Field(
+        ..., description="Total duration of the script in seconds"
+    )
     scenes: List[dict] = Field(..., description="List of scene objects")
     music: Optional[dict] = Field(None, description="Music configuration")
     pacing: Optional[str] = Field(None, description="Pacing description")
@@ -79,9 +81,7 @@ class MusicSelectorResult(BaseModel):
 
     class Config:
         json_schema_extra = {
-            "example": {
-                "audio_path": "/tmp/sound_effect_energetic_30s_1234567890.mp3"
-            }
+            "example": {"audio_path": "/tmp/sound_effect_energetic_30s_1234567890.mp3"}
         }
 
 
@@ -92,22 +92,20 @@ class FrameExtractorResult(BaseModel):
 
     class Config:
         json_schema_extra = {
-            "example": {
-                "frame_path": "/path/to/video_frame_ai_13s.png"
-            }
+            "example": {"frame_path": "/path/to/video_frame_ai_13s.png"}
         }
 
 
 class ThumbnailGeneratorResult(BaseModel):
     """Schema for thumbnail generator tool output."""
 
-    thumbnail_path: str = Field(..., description="Path to the generated thumbnail image")
+    thumbnail_path: str = Field(
+        ..., description="Path to the generated thumbnail image"
+    )
 
     class Config:
         json_schema_extra = {
-            "example": {
-                "thumbnail_path": "/tmp/thumbnail_1234567890.png"
-            }
+            "example": {"thumbnail_path": "/tmp/thumbnail_1234567890.png"}
         }
 
 
@@ -117,9 +115,4 @@ class VideoComposerResult(BaseModel):
     video_path: str = Field(..., description="Path to the final composed video file")
 
     class Config:
-        json_schema_extra = {
-            "example": {
-                "video_path": "/tmp/composed_video_12345.mp4"
-            }
-        }
-
+        json_schema_extra = {"example": {"video_path": "/tmp/composed_video_12345.mp4"}}

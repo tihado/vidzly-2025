@@ -74,7 +74,7 @@ def agent_workflow(
     This workflow parallelizes operations where possible:
     - Video analysis: All videos are analyzed concurrently
     - Music generation and frame extraction: Run in parallel
-    
+
     This is a generator function that yields progress updates as the workflow progresses.
     Each yield contains: (final_path, summary_json, script_json, thumbnail_path, status)
 
@@ -118,7 +118,7 @@ def agent_workflow(
         yield final_path, summary_json, script_json, thumbnail_path, status
 
         summaries = []
-        
+
         def analyze_video(video_path, index):
             """Helper function to analyze a single video."""
             try:
@@ -137,20 +137,22 @@ def agent_workflow(
                 executor.submit(analyze_video, video_path, i): (i, video_path)
                 for i, video_path in enumerate(video_paths)
             }
-            
+
             # Process results as they complete
             results = [None] * len(video_paths)
             for future in as_completed(future_to_video):
                 index, summary_dict, error = future.result()
-                
+
                 if error:
-                    status += f"  ⚠️ Warning: Video {index+1}/{len(video_paths)} - {error}\n"
+                    status += (
+                        f"  ⚠️ Warning: Video {index+1}/{len(video_paths)} - {error}\n"
+                    )
                 elif summary_dict:
                     results[index] = summary_dict
                     status += f"  ✅ Completed video {index+1}/{len(video_paths)}\n"
                 else:
                     status += f"  ⚠️ Warning: Video {index+1}/{len(video_paths)} - No summary generated\n"
-                
+
                 yield final_path, summary_json, script_json, thumbnail_path, status
 
         # Collect successful summaries in order
@@ -186,14 +188,20 @@ def agent_workflow(
             else:
                 # Fallback: extract mood from first video summary
                 if summaries and summaries[0].get("mood_tags"):
-                    music_mood = summaries[0]["mood_tags"][0] if summaries[0]["mood_tags"] else "energetic"
+                    music_mood = (
+                        summaries[0]["mood_tags"][0]
+                        if summaries[0]["mood_tags"]
+                        else "energetic"
+                    )
                 else:
                     music_mood = "energetic"
         except:
             music_mood = "energetic"
 
         # Step 3 & 4: Generate music and extract frame in parallel
-        status += "\n🎵 Step 3 & 4: Generating music and extracting frame (in parallel)...\n"
+        status += (
+            "\n🎵 Step 3 & 4: Generating music and extracting frame (in parallel)...\n"
+        )
         yield final_path, summary_json, script_json, thumbnail_path, status
 
         music_path = None
@@ -250,7 +258,7 @@ def agent_workflow(
                     elif result:
                         frame_path = result
                         status += "✅ Frame extracted.\n"
-                
+
                 yield final_path, summary_json, script_json, thumbnail_path, status
 
         # Step 5: Generate thumbnail
