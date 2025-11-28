@@ -1,3 +1,14 @@
+---
+title: Vidzly
+emoji: 🎬
+colorFrom: blue
+colorTo: purple
+sdk: gradio
+sdk_version: "6.0.0"
+app_file: src/app/app.py
+pinned: false
+---
+
 <p align="center">
   <img src="https://cdn.tihado.com/app.png" alt="Vidzly Logo"/>
 </p>
