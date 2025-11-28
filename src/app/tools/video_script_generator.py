@@ -8,7 +8,8 @@ import google.genai as genai
 def _extract_and_parse_json(text: str) -> Optional[Union[dict, list]]:
     """
     Extract and parse JSON from text that might contain extra content.
-    Handles cases where JSON is wrapped in markdown, has extra text, or multiple objects.
+    Handles cases where JSON is wrapped in markdown, has extra text, multiple objects,
+    or wrapped in tool response format like {"tool_name_response": {...}}.
     """
     if not text or not isinstance(text, str):
         return None
@@ -17,7 +18,30 @@ def _extract_and_parse_json(text: str) -> Optional[Union[dict, list]]:
 
     # Try direct parsing first
     try:
-        return json.loads(text)
+        parsed = json.loads(text)
+        # Check if it's wrapped in a tool response format
+        # e.g., {"video_summarizer_tool_response": {...}} or [{"video_summarizer_tool_response": {...}}]
+        if isinstance(parsed, dict):
+            # Check if it's a single tool response wrapper
+            if len(parsed) == 1:
+                key = list(parsed.keys())[0]
+                if "_tool_response" in key.lower() or "_response" in key.lower():
+                    # Extract the actual data from the wrapper
+                    return parsed[key]
+        elif isinstance(parsed, list) and len(parsed) > 0:
+            # Check if list contains wrapped responses
+            unwrapped = []
+            for item in parsed:
+                if isinstance(item, dict) and len(item) == 1:
+                    key = list(item.keys())[0]
+                    if "_tool_response" in key.lower() or "_response" in key.lower():
+                        unwrapped.append(item[key])
+                    else:
+                        unwrapped.append(item)
+                else:
+                    unwrapped.append(item)
+            return unwrapped if unwrapped else parsed
+        return parsed
     except json.JSONDecodeError:
         pass
 
@@ -179,7 +203,16 @@ def video_script_generator(
                     else:
                         summaries_list.append(parsed)
                 elif isinstance(summary, dict):
-                    summaries_list.append(summary)
+                    # Check if it's wrapped in a tool response format
+                    if len(summary) == 1:
+                        key = list(summary.keys())[0]
+                        if "_tool_response" in key.lower() or "_response" in key.lower():
+                            # Extract the actual data from the wrapper
+                            summaries_list.append(summary[key])
+                        else:
+                            summaries_list.append(summary)
+                    else:
+                        summaries_list.append(summary)
                 else:
                     raise ValueError(
                         f"Invalid summary type: {type(summary).__name__}. "
