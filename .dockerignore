@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+ENV/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Environment files (should be provided at runtime)
+.env
+.env.local
+
+# Test data (large video files)
+tests/data/
+
+# Poetry (keep these for Docker build)
+# poetry.lock
+# pyproject.toml
+
+# Other
+.DS_Store
+*.log
+lefthook.yml
+

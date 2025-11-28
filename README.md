@@ -3,9 +3,8 @@ title: Vidzly
 emoji: 🎬
 colorFrom: blue
 colorTo: purple
-sdk: gradio
-sdk_version: "6.0.0"
-app_file: src/app/app.py
+sdk: docker
+app_port: 7860
 pinned: false
 ---
 
