@@ -94,7 +94,7 @@ Vidzly provides a comprehensive suite of MCP tools accessible through a Gradio w
 
 ## 👥 Team
 
-**Team Name:** FleetMind AI Team
+**Team Name:** Vidzly
 
 **Team Members:**
 
