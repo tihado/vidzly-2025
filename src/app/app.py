@@ -15,7 +15,6 @@ from tools.music_selector import music_selector
 from tools.video_script_generator import video_script_generator
 from workflow_ui import workflow_ui
 from tools.text_to_speech import text_to_speech_simple
-from tools.script_generator import script_generator
 from tools.subtitle_creator import subtitle_creator
 
 
@@ -364,28 +363,6 @@ Check out our LinkedIn post about Vidzly from the Agents & MCP Hackathon 2025!
                 title="Text-to-Speech Converter",
                 description="Convert text or subtitles to audio using Google Text-to-Speech. Supports plain text, SRT, VTT, and JSON formats. Enable 'Generate Timed Segments' to create individual audio files for each subtitle with timing metadata (perfect for video synchronization with Video Composer output).",
                 api_name="text_to_speech",
-            )
-
-        with gr.Tab("Script Generator"):
-            gr.Interface(
-                fn=script_generator,
-                inputs=[
-                    gr.File(
-                        label="Video Materials (Required - upload multiple videos)",
-                        file_count="multiple",
-                        file_types=["video"],
-                    ),
-                    gr.Textbox(
-                        label="User Prompt (Optional)",
-                        placeholder="e.g., 'Create an energetic travel montage with upbeat pacing' or 'Make a dramatic product reveal video'",
-                        lines=3,
-                        info="Optional: Provide specific instructions or creative direction. If left empty, the AI will generate a script based on the video content analysis.",
-                    ),
-                ],
-                outputs=[gr.Textbox(label="Video Production Script (JSON)", lines=25)],
-                title="Script Generator",
-                description="Generate comprehensive video production scripts from multiple video materials. Upload your source videos and optionally provide creative direction. The AI will analyze the content and create a detailed script including scene breakdowns, timing, transitions, audio recommendations, and visual effects. Outputs both structured JSON and narrative formats.",
-                api_name="script_generator",
             )
 
         with gr.Tab("Subtitle Creator"):
