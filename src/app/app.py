@@ -62,6 +62,52 @@ with gr.Blocks() as demo:
         gr.Markdown("---")
         workflow_ui()
 
+    with gr.Tab("Demo Video"):
+        gr.Markdown(
+            """
+# 🎥 Vidzly Demo Video
+
+Watch how Vidzly transforms raw footage into viral-ready content in seconds!
+"""
+        )
+        # Extract video ID from YouTube URL
+        video_id = "UhRdQ-ab6M4"
+        gr.HTML(
+            f"""
+            <div style="display: flex; justify-content: center; padding: 20px;">
+                <iframe 
+                    width="800" 
+                    height="450" 
+                    src="https://www.youtube.com/embed/{video_id}" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+            """
+        )
+        gr.Markdown(
+            f"""
+**Watch on YouTube:** [https://youtu.be/{video_id}](https://youtu.be/{video_id})
+"""
+        )
+        linkedin_url = "https://www.linkedin.com/posts/hanh-thi-hong-tran-0b886212a_vidzly-gradio-agents-mcp-hackathon-2025-activity-7400634801017393152-9aNo?utm_source=share&utm_medium=member_desktop&rcm=ACoAAB_OdAwB8VCwwp8RwXKLDvqpabxGKNKzGSM"
+        gr.Markdown(
+            f"""
+---
+
+# 📱 Vidzly on LinkedIn
+
+Check out our LinkedIn post about Vidzly from the Agents & MCP Hackathon 2025!
+
+<div style="text-align: center; padding: 20px;">
+    <a href="{linkedin_url}" target="_blank" style="display: inline-block; padding: 15px 30px; background-color: #0077b5; color: white; text-decoration: none; border-radius: 5px; font-size: 18px; font-weight: bold;">
+        🔗 View LinkedIn Post
+    </a>
+</div>
+"""
+        )
+
     with gr.Tab("MCP Tools"):
         with gr.Tab("Video Summarizer"):
             gr.Interface(

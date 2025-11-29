@@ -31,6 +31,27 @@ tags:
 
 Vidzly is an intelligent automation platform that revolutionizes short-form video creation. Whether you're a micro-influencer, content creator, or business owner, Vidzly transforms your raw clips into polished, engaging videos that stop the scroll.
 
+### 🎥 Demo Video
+
+<p align="center">
+  <iframe 
+    width="560" 
+    height="315" 
+    src="https://www.youtube.com/embed/UhRdQ-ab6M4" 
+    title="Vidzly Demo Video" 
+    frameborder="0" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+    allowfullscreen
+    style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+  </iframe>
+</p>
+
+<p align="center">
+  <a href="https://youtu.be/UhRdQ-ab6M4" target="_blank">▶️ Watch on YouTube</a>
+</p>
+
+- **LinkedIn Post**: [Read about Vidzly on LinkedIn](https://www.linkedin.com/posts/hanh-thi-hong-tran-0b886212a_vidzly-gradio-agents-mcp-hackathon-2025-activity-7400634801017393152-9aNo?utm_source=share&utm_medium=member_desktop&rcm=ACoAAB_OdAwB8VCwwp8RwXKLDvqpabxGKNKzGSM)
+
 ### 🚀 Why Vidzly?
 
 - **Zero Learning Curve**: No video editing skills? No problem. Use our intuitive web interface.
